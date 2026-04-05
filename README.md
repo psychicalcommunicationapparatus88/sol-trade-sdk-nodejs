@@ -177,6 +177,6 @@ MIT License
 ## Contact
 
 - Official Website: https://fnzero.dev/
-- Project Repository: https://github.com/sol-trade-sdk/sol-trade-sdk-ts
+- Project Repository: https://github.com/0xfnzero/sol-trade-sdk-ts
 - Telegram Group: https://t.me/fnzero_group
 - Discord: https://discord.gg/vuazbGkqQE
