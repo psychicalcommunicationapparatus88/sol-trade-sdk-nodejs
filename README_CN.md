@@ -1,7 +1,7 @@
-# Sol Trade SDK for TypeScript
+# Sol Trade SDK for Node.js
 
 <p align="center">
-    <strong>高性能 TypeScript SDK，用于低延迟 Solana DEX 交易</strong>
+    <strong>高性能 Node.js SDK，用于低延迟 Solana DEX 交易</strong>
 </p>
 
 <p align="center">
@@ -36,10 +36,11 @@
 ## 特性
 
 - **多 DEX 支持**: PumpFun、PumpSwap、Bonk、Raydium AMM V4、Raydium CPMM、Meteora DAMM V2
-- **SWQoS 集成**: Jito、Bloxroute、ZeroSlot、Temporal、FlashBlock、Helius 等
+- **19 个 SWQoS 提供商**: Jito、Bloxroute、ZeroSlot、NextBlock、Temporal、Node1、FlashBlock、BlockRazor、Astralane、Stellium、Lightspeed、Soyas、Speedlanding、Helius、Triton、QuickNode、Syndica、Figment、Alchemy
 - **高性能**: LRU/TTL/分片缓存、连接池、并行执行
 - **低延迟**: 针对亚秒级交易执行优化
-- **安全优先**: 整数溢出保护、加密安全随机数
+- **安全优先**: 整数溢出保护、安全密钥存储、输入验证
+- **零-RPC 热路径**: 所有 RPC 调用在交易执行前完成
 - **类型安全**: 完整的 TypeScript 支持和全面的类型定义
 - **模块化设计**: 按需使用
 
@@ -54,6 +55,8 @@ pnpm add sol-trade-sdk
 ```
 
 ## 快速开始
+
+### 基本交易
 
 ```typescript
 import {
@@ -78,6 +81,114 @@ const result = await executor.execute(TradeType.Buy, transactionBuffer);
 console.log(`交易签名: ${result.signature}`);
 ```
 
+### PumpFun 交易
+
+```typescript
+import { PumpFunInstructionBuilder } from 'sol-trade-sdk/instruction/pumpfun';
+import { getBuyTokenAmountFromSolAmount } from 'sol-trade-sdk/calc/pumpfun';
+
+// 计算输入 SOL 可获得的代币数量
+const tokens = getBuyTokenAmountFromSolAmount(
+  1_073_000_000_000_000, // virtualTokenReserves
+  30_000_000_000,         // virtualSolReserves
+  793_000_000_000_000,    // realTokenReserves
+  true,                   // hasCreator
+  1_000_000_000           // amount (1 SOL)
+);
+
+// 构建买入指令
+const builder = new PumpFunInstructionBuilder();
+const instructions = builder.buildBuyInstructions({
+  payer: payerPubkey,
+  outputMint: tokenMint,
+  inputAmount: 1_000_000_000,
+  slippageBasisPoints: 500, // 5%
+  bondingCurve: bondingCurvePubkey,
+  creatorVault: creatorVaultPubkey,
+  associatedBondingCurve: abcPubkey,
+});
+```
+
+### 热路径执行（零-RPC 交易）
+
+```typescript
+import { HotPathExecutor, HotPathState } from 'sol-trade-sdk/hotpath';
+
+// 使用预取数据初始化热路径状态
+const state = new HotPathState();
+await state.prefetchBlockhash(rpcClient);
+await state.cacheAccount(tokenAccountPubkey);
+
+// 在交易期间无需任何 RPC 调用即可执行
+const executor = new HotPathExecutor(state);
+const result = await executor.executeTrade(transaction);
+```
+
+### 使用工厂模式交易
+
+```typescript
+import {
+  TradeExecutorFactory,
+  TradingClient,
+  DexType,
+} from 'sol-trade-sdk/trading';
+
+// 使用基础执行器创建工厂
+const factory = new TradeExecutorFactory(baseExecutor);
+
+// 获取 DEX 特定执行器
+const pumpfunExecutor = factory.getExecutor(DexType.PumpFun);
+
+// 创建交易客户端
+const client = new TradingClient(factory);
+
+// 在 PumpFun 上执行买入
+const result = await client.buy(DexType.PumpFun, params);
+console.log(`结果: ${result.signature}`);
+```
+
+## 安全特性
+
+```typescript
+import {
+  SecureKeyStorage,
+  validateRpcUrl,
+  validateAmount,
+  validatePubkey,
+} from 'sol-trade-sdk/security';
+
+// 带 AES-256-GCM 加密的安全密钥存储
+const storage = SecureKeyStorage.fromKeyPair(keypair, '可选密码');
+storage.unlock((kp) => {
+  const signature = kp.sign(message);
+  return signature;
+});
+storage.clear(); // 安全内存清除
+
+// 输入验证
+validateRpcUrl('https://api.mainnet-beta.solana.com');
+validateAmount(1_000_000_000, 'amount', { allowZero: false });
+validatePubkey(pubkeyString, 'tokenMint');
+```
+
+## 地址查找表
+
+```typescript
+import {
+  fetchAddressLookupTableAccount,
+  AddressLookupTableCache,
+} from 'sol-trade-sdk/address-lookup';
+
+// 从链上获取 ALT
+const alt = await fetchAddressLookupTableAccount(rpc, altAddress);
+console.log(`ALT 包含 ${alt.addresses.length} 个地址`);
+
+// 使用缓存提高性能
+const cache = new AddressLookupTableCache(rpc);
+await cache.prefetch([altAddress1, altAddress2, altAddress3]);
+const cached = cache.get(altAddress1);
+```
+
 ## 子路径导入
 
 ```typescript
@@ -85,66 +196,101 @@ console.log(`交易签名: ${result.signature}`);
 import { LRUCache } from 'sol-trade-sdk/cache';
 import { calculatePumpFunBuy } from 'sol-trade-sdk/calc';
 import { JitoClient } from 'sol-trade-sdk/swqos';
-```
-
-## 安全特性
-
-```typescript
-import { randomBytes } from 'crypto';
-
-// 加密安全随机数用于费用接收方选择
-const randomIndex = randomBytes(1)[0] % MAYHEM_FEE_RECIPIENTS.length;
-
-// 计算中的整数溢出保护
-import { calculateFee } from 'sol-trade-sdk/calc';
-const fee = calculateFee(amount, feeBasisPoints); // 溢出时抛出异常
+import { HotPathExecutor } from 'sol-trade-sdk/hotpath';
+import { SecureKeyStorage } from 'sol-trade-sdk/security';
+import { TradeExecutorFactory } from 'sol-trade-sdk/trading';
 ```
 
 ## 架构
 
 | 模块 | 描述 |
 |------|------|
+| `address-lookup` | 带缓存的地址查找表支持 |
 | `cache` | LRU、TTL 和分片缓存 |
-| `calc` | 所有 DEX 的 AMM 计算，带溢出保护 |
+| `calc` | 带 `math/bits` 溢出保护的所有 DEX AMM 计算 |
+| `common` | 核心类型、Gas 策略、联合曲线 |
+| `execution` | 分支优化、预取 |
 | `hotpath` | 零-RPC 热路径执行 |
-| `instruction` | 带安全随机数的指令构建器 |
+| `instruction` | 所有 DEX 的指令构建器 |
+| `middleware` | 指令中间件系统 |
 | `pool` | 连接池和工作池 |
 | `rpc` | 高性能 RPC 客户端 |
+| `security` | 安全密钥存储、验证器 |
 | `seed` | 所有协议的 PDA 派生 |
-| `swqos` | MEV 提供商客户端 |
-| `trading` | 高性能交易执行器 |
+| `swqos` | MEV 提供商客户端（19 个提供商） |
+| `trading` | 带工厂的高性能交易执行器 |
 
 ## 支持的协议
 
 ### PumpFun
-- 联合曲线计算
+- 带创建者费用支持的联合曲线计算
 - 买卖指令构建
-- PDA 派生
+- 联合曲线和关联账户的 PDA 派生
 
 ### PumpSwap
-- 池计算
-- 费用分解 (LP、协议、曲线)
-- 指令构建
+- 带 LP/协议/创建者费用的池计算
+- 买卖指令构建
+- Mayhem 模式支持
+
+### Bonk
+- 虚拟/真实储备计算
+- 协议费用处理
 
 ### Raydium
-- AMM V4 计算
+- 恒定乘积的 AMM V4 计算
 - CPMM 计算
 - 权限 PDA 派生
 
 ### Meteora
-- DAMM V2 支持
+- DAMM V2 交换计算
 - 池 PDA 派生
 
-## SWQoS 提供商
+## SWQoS 提供商（共 19 个）
 
 | 提供商 | 最低小费 | 特性 |
 |----------|---------|----------|
-| Jito | 0.001 SOL | 捆绑支持、gRPC |
-| Bloxroute | 0.0003 SOL | 高可靠性 |
-| ZeroSlot | 0.0001 SOL | 低延迟 |
+| Jito | 0.001 SOL | 捆绑支持、gRPC、多区域 |
+| Bloxroute | 0.0003 SOL | 高可靠性、全球分布 |
+| ZeroSlot | 0.0001 SOL | 零槽位着陆 |
+| NextBlock | 0.0001 SOL | 下一区块优先 |
 | Temporal | 0.0001 SOL | 快速确认 |
+| Node1 | 0.0001 SOL | 直接验证者访问 |
 | FlashBlock | 0.0001 SOL | 有竞争力的价格 |
-| Helius | 0.000005 SOL | 仅 SWQoS 模式 |
+| BlockRazor | 0.0001 SOL | MEV 保护 |
+| Astralane | 0.0001 SOL | 快速提交 |
+| Stellium | 0.0001 SOL | 全球基础设施 |
+| Lightspeed | 0.0001 SOL | 低延迟 |
+| Soyas | 0.0001 SOL | MEV 保护 |
+| Speedlanding | 0.0001 SOL | 快速着陆 |
+| Helius | 0.000005 SOL | 仅 SWQoS 模式、增强 API |
+| Triton | 可变 | 企业级 RPC |
+| QuickNode | 可变 | 企业级 RPC |
+| Syndica | 可变 | 企业级 RPC |
+| Figment | 可变 | 企业级 RPC |
+| Alchemy | 可变 | 企业级 RPC |
+
+## 中间件系统
+
+```typescript
+import {
+  MiddlewareManager,
+  ValidationMiddleware,
+  TimerMiddleware,
+  MetricsMiddleware,
+} from 'sol-trade-sdk/middleware';
+
+const manager = new MiddlewareManager();
+manager.addMiddleware(new ValidationMiddleware({ maxInstructions: 100 }));
+manager.addMiddleware(new TimerMiddleware());
+manager.addMiddleware(new MetricsMiddleware());
+
+// 将中间件应用于指令
+const processed = manager.applyMiddlewaresProcessProtocolInstructions(
+  instructions,
+  'PumpFun',
+  true // isBuy
+);
+```
 
 ## 环境要求
 
@@ -177,6 +323,6 @@ MIT License
 ## 联系方式
 
 - 官方网站: https://fnzero.dev/
-- 项目仓库: https://github.com/0xfnzero/sol-trade-sdk-ts
+- 项目仓库: https://github.com/0xfnzero/sol-trade-sdk-nodejs
 - Telegram 群组: https://t.me/fnzero_group
 - Discord: https://discord.gg/vuazbGkqQE

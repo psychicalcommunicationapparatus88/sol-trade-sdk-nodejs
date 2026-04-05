@@ -63,6 +63,10 @@ export enum SwqosRegion {
   Amsterdam = 'Amsterdam',
   Tokyo = 'Tokyo',
   Singapore = 'Singapore',
+  SLC = 'SLC',
+  London = 'London',
+  LosAngeles = 'LosAngeles',
+  Default = 'Default',
 }
 
 /**
@@ -80,6 +84,15 @@ export enum SwqosType {
   Astralane = 'Astralane',
   NextBlock = 'NextBlock',
   Helius = 'Helius',
+  Stellium = 'Stellium',
+  Lightspeed = 'Lightspeed',
+  Soyas = 'Soyas',
+  Speedlanding = 'Speedlanding',
+  Triton = 'Triton',
+  QuickNode = 'QuickNode',
+  Syndica = 'Syndica',
+  Figment = 'Figment',
+  Alchemy = 'Alchemy',
 }
 
 // ============== Interfaces ==============
@@ -804,3 +817,15 @@ export * from './hotpath';
 
 // Re-export gas fee strategy class (overrides interface)
 export { GasFeeStrategy, GasFeeStrategyType, GasFeeStrategyValue } from './common/gas-fee-strategy';
+
+// Re-export security module
+export * from './security';
+
+// Re-export address lookup module
+export * from './address-lookup';
+
+// Re-export trading factory
+export * from './trading/factory';
+
+// Re-export middleware module
+export * from './middleware/traits';

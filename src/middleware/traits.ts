@@ -169,3 +169,236 @@ export class LoggingMiddleware implements InstructionMiddleware {
     return new LoggingMiddleware();
   }
 }
+
+/**
+ * Timer middleware - Measures execution time
+ */
+export class TimerMiddleware implements InstructionMiddleware {
+  private enabled: boolean = true;
+
+  name(): string {
+    return 'TimerMiddleware';
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  processProtocolInstructions(
+    protocolInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    if (!this.enabled) return protocolInstructions;
+
+    const start = Date.now();
+    console.log(`[${this.name()}] Processing protocol instructions for ${protocolName} (buy: ${isBuy})`);
+    console.log(`[${this.name()}] Processing time: ${Date.now() - start}ms`);
+    return protocolInstructions;
+  }
+
+  processFullInstructions(
+    fullInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    if (!this.enabled) return fullInstructions;
+
+    const start = Date.now();
+    console.log(`[${this.name()}] Processing full instructions for ${protocolName} (buy: ${isBuy})`);
+    console.log(`[${this.name()}] Processing time: ${Date.now() - start}ms`);
+    return fullInstructions;
+  }
+
+  clone(): InstructionMiddleware {
+    const copy = new TimerMiddleware();
+    copy.enabled = this.enabled;
+    return copy;
+  }
+}
+
+/**
+ * Validation middleware - Validates instructions before processing
+ */
+export class ValidationMiddleware implements InstructionMiddleware {
+  constructor(
+    private maxInstructions: number = 100,
+    private maxDataSize: number = 10000,
+  ) {}
+
+  name(): string {
+    return 'ValidationMiddleware';
+  }
+
+  private validate(instructions: TransactionInstruction[]): void {
+    if (this.maxInstructions > 0 && instructions.length > this.maxInstructions) {
+      throw new Error(`[${this.name()}] Too many instructions: ${instructions.length} > ${this.maxInstructions}`);
+    }
+
+    for (let i = 0; i < instructions.length; i++) {
+      const ix = instructions[i];
+      if (this.maxDataSize > 0 && ix.data.length > this.maxDataSize) {
+        throw new Error(`[${this.name()}] Instruction ${i} data too large: ${ix.data.length} > ${this.maxDataSize}`);
+      }
+    }
+  }
+
+  processProtocolInstructions(
+    protocolInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    this.validate(protocolInstructions);
+    return protocolInstructions;
+  }
+
+  processFullInstructions(
+    fullInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    this.validate(fullInstructions);
+    return fullInstructions;
+  }
+
+  clone(): InstructionMiddleware {
+    return new ValidationMiddleware(this.maxInstructions, this.maxDataSize);
+  }
+}
+
+/**
+ * Filter middleware - Filters instructions based on program ID
+ */
+export class FilterMiddleware implements InstructionMiddleware {
+  private allowedPrograms: Set<string>;
+
+  constructor(
+    programs: PublicKey[],
+    private mode: 'allow' | 'block' = 'allow',
+  ) {
+    this.allowedPrograms = new Set(programs.map(p => p.toBase58()));
+  }
+
+  name(): string {
+    return 'FilterMiddleware';
+  }
+
+  private filter(instructions: TransactionInstruction[]): TransactionInstruction[] {
+    return instructions.filter(ix => {
+      const programId = ix.programId.toBase58();
+      const isAllowed = this.allowedPrograms.has(programId);
+      return this.mode === 'allow' ? isAllowed : !isAllowed;
+    });
+  }
+
+  processProtocolInstructions(
+    protocolInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    return this.filter(protocolInstructions);
+  }
+
+  processFullInstructions(
+    fullInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    return this.filter(fullInstructions);
+  }
+
+  clone(): InstructionMiddleware {
+    const programs = Array.from(this.allowedPrograms).map(p => new PublicKey(p));
+    return new FilterMiddleware(programs, this.mode);
+  }
+}
+
+/**
+ * Metrics middleware - Collects metrics about instruction processing
+ */
+export class MetricsMiddleware implements InstructionMiddleware {
+  private instructionCounts: Map<string, number> = new Map();
+  private totalInstructions: number = 0;
+  private totalDataSize: number = 0;
+
+  name(): string {
+    return 'MetricsMiddleware';
+  }
+
+  private record(protocolName: string, instructions: TransactionInstruction[]): void {
+    const current = this.instructionCounts.get(protocolName) || 0;
+    this.instructionCounts.set(protocolName, current + instructions.length);
+    this.totalInstructions += instructions.length;
+
+    for (const ix of instructions) {
+      this.totalDataSize += ix.data.length;
+    }
+  }
+
+  processProtocolInstructions(
+    protocolInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    this.record(protocolName, protocolInstructions);
+    return protocolInstructions;
+  }
+
+  processFullInstructions(
+    fullInstructions: TransactionInstruction[],
+    protocolName: string,
+    isBuy: boolean,
+  ): TransactionInstruction[] {
+    this.record(protocolName, fullInstructions);
+    return fullInstructions;
+  }
+
+  clone(): InstructionMiddleware {
+    return new MetricsMiddleware();
+  }
+
+  /**
+   * Get collected metrics
+   */
+  getMetrics(): {
+    instructionCounts: Record<string, number>;
+    totalInstructions: number;
+    totalDataSize: number;
+  } {
+    return {
+      instructionCounts: Object.fromEntries(this.instructionCounts),
+      totalInstructions: this.totalInstructions,
+      totalDataSize: this.totalDataSize,
+    };
+  }
+
+  /**
+   * Reset metrics
+   */
+  reset(): void {
+    this.instructionCounts.clear();
+    this.totalInstructions = 0;
+    this.totalDataSize = 0;
+  }
+}
+
+/**
+ * Create manager with standard middlewares
+ */
+export function withStandardMiddlewares(): MiddlewareManager {
+  return new MiddlewareManager()
+    .addMiddleware(new ValidationMiddleware())
+    .addMiddleware(new LoggingMiddleware())
+    .addMiddleware(new TimerMiddleware());
+}
+
+/**
+ * Create manager with all builtin middlewares
+ */
+export function withAllBuiltinMiddlewares(): MiddlewareManager {
+  return new MiddlewareManager()
+    .addMiddleware(new ValidationMiddleware())
+    .addMiddleware(new LoggingMiddleware())
+    .addMiddleware(new TimerMiddleware())
+    .addMiddleware(new MetricsMiddleware());
+}

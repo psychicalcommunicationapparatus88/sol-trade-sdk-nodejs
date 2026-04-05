@@ -518,6 +518,134 @@ export function raydiumCpmmGetAmountOut(
   return amountOut;
 }
 
+// ===== Meteora DAMM V2 Calculations =====
+
+export interface MeteoraSwapResult {
+  amountOut: bigint;
+  minAmountOut: bigint;
+}
+
+/**
+ * Compute swap amount for Meteora DAMM V2
+ */
+export function meteoraDammV2ComputeSwapAmount(
+  tokenAReserve: bigint,
+  tokenBReserve: bigint,
+  isAToB: boolean,
+  amountIn: bigint,
+  slippageBasisPoints: bigint
+): MeteoraSwapResult {
+  if (amountIn === BigInt(0)) {
+    return { amountOut: BigInt(0), minAmountOut: BigInt(0) };
+  }
+
+  let amountOut: bigint;
+
+  if (isAToB) {
+    // Swapping token A for token B
+    if (tokenAReserve === BigInt(0)) {
+      return { amountOut: BigInt(0), minAmountOut: BigInt(0) };
+    }
+
+    // Constant product: b_out = (b_reserve * a_in) / (a_reserve + a_in)
+    const numerator = tokenBReserve * amountIn;
+    const denominator = tokenAReserve + amountIn;
+
+    if (denominator === BigInt(0)) {
+      return { amountOut: BigInt(0), minAmountOut: BigInt(0) };
+    }
+
+    amountOut = numerator / denominator;
+  } else {
+    // Swapping token B for token A
+    if (tokenBReserve === BigInt(0)) {
+      return { amountOut: BigInt(0), minAmountOut: BigInt(0) };
+    }
+
+    // Constant product: a_out = (a_reserve * b_in) / (b_reserve + b_in)
+    const numerator = tokenAReserve * amountIn;
+    const denominator = tokenBReserve + amountIn;
+
+    if (denominator === BigInt(0)) {
+      return { amountOut: BigInt(0), minAmountOut: BigInt(0) };
+    }
+
+    amountOut = numerator / denominator;
+  }
+
+  // Apply slippage
+  const minAmountOut = calculateWithSlippageSell(amountOut, slippageBasisPoints);
+
+  return { amountOut, minAmountOut };
+}
+
+/**
+ * Calculate current price (token B per token A) for Meteora DAMM V2
+ */
+export function meteoraDammV2CalculatePrice(
+  tokenAReserve: bigint,
+  tokenBReserve: bigint
+): number {
+  if (tokenAReserve === BigInt(0)) {
+    return 0.0;
+  }
+  return Number(tokenBReserve) / Number(tokenAReserve);
+}
+
+/**
+ * Calculate liquidity (geometric mean of reserves) for Meteora DAMM V2
+ */
+export function meteoraDammV2CalculateLiquidity(
+  tokenAReserve: bigint,
+  tokenBReserve: bigint
+): bigint {
+  if (tokenAReserve === BigInt(0) || tokenBReserve === BigInt(0)) {
+    return BigInt(0);
+  }
+  return BigInt(Math.floor(Math.sqrt(Number(tokenAReserve) * Number(tokenBReserve))));
+}
+
+/**
+ * Calculate output amount with fee consideration for Meteora DAMM V2
+ */
+export function meteoraDammV2GetAmountOut(
+  amountIn: bigint,
+  inputReserve: bigint,
+  outputReserve: bigint,
+  feeBasisPoints: bigint
+): bigint {
+  if (inputReserve === BigInt(0) || outputReserve === BigInt(0) || amountIn === BigInt(0)) {
+    return BigInt(0);
+  }
+
+  // Apply fee
+  const amountInAfterFee = (amountIn * (BigInt(10000) - feeBasisPoints)) / BigInt(10000);
+
+  const numerator = amountInAfterFee * outputReserve;
+  const denominator = inputReserve + amountInAfterFee;
+
+  return numerator / denominator;
+}
+
+/**
+ * Calculate input amount needed for desired output for Meteora DAMM V2
+ */
+export function meteoraDammV2GetAmountIn(
+  amountOut: bigint,
+  inputReserve: bigint,
+  outputReserve: bigint,
+  feeBasisPoints: bigint
+): bigint {
+  if (inputReserve === BigInt(0) || outputReserve === BigInt(0) || amountOut >= outputReserve) {
+    return BigInt(0);
+  }
+
+  const numerator = inputReserve * amountOut * BigInt(10000);
+  const denominator = (outputReserve - amountOut) * (BigInt(10000) - feeBasisPoints);
+
+  return ceilDiv(numerator, denominator);
+}
+
 // ===== Utility Functions =====
 
 /**

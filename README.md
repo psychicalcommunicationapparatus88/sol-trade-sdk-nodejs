@@ -1,7 +1,7 @@
-# Sol Trade SDK for TypeScript
+# Sol Trade SDK for Node.js
 
 <p align="center">
-    <strong>A high-performance TypeScript SDK for low-latency Solana DEX trading</strong>
+    <strong>A high-performance Node.js SDK for low-latency Solana DEX trading</strong>
 </p>
 
 <p align="center">
@@ -36,10 +36,11 @@ A comprehensive, high-performance TypeScript SDK for Solana DEX trading with sup
 ## Features
 
 - **Multiple DEX Support**: PumpFun, PumpSwap, Bonk, Raydium AMM V4, Raydium CPMM, Meteora DAMM V2
-- **SWQoS Integration**: Jito, Bloxroute, ZeroSlot, Temporal, FlashBlock, Helius, and more
+- **19 SWQoS Providers**: Jito, Bloxroute, ZeroSlot, NextBlock, Temporal, Node1, FlashBlock, BlockRazor, Astralane, Stellium, Lightspeed, Soyas, Speedlanding, Helius, Triton, QuickNode, Syndica, Figment, Alchemy
 - **High Performance**: LRU/TTL/Sharded caching, connection pooling, parallel execution
 - **Low Latency**: Optimized for sub-second trade execution
-- **Security First**: Integer overflow protection, cryptographically secure randomness
+- **Security First**: Integer overflow protection, secure key storage, input validation
+- **Zero-RPC Hot Path**: All RPC calls happen BEFORE trading execution
 - **Type Safety**: Full TypeScript support with comprehensive type definitions
 - **Modular Design**: Use only what you need
 
@@ -54,6 +55,8 @@ pnpm add sol-trade-sdk
 ```
 
 ## Quick Start
+
+### Basic Trading
 
 ```typescript
 import {
@@ -78,6 +81,114 @@ const result = await executor.execute(TradeType.Buy, transactionBuffer);
 console.log(`Transaction signature: ${result.signature}`);
 ```
 
+### PumpFun Trading
+
+```typescript
+import { PumpFunInstructionBuilder } from 'sol-trade-sdk/instruction/pumpfun';
+import { getBuyTokenAmountFromSolAmount } from 'sol-trade-sdk/calc/pumpfun';
+
+// Calculate tokens received for SOL input
+const tokens = getBuyTokenAmountFromSolAmount(
+  1_073_000_000_000_000, // virtualTokenReserves
+  30_000_000_000,         // virtualSolReserves
+  793_000_000_000_000,    // realTokenReserves
+  true,                   // hasCreator
+  1_000_000_000           // amount (1 SOL)
+);
+
+// Build buy instructions
+const builder = new PumpFunInstructionBuilder();
+const instructions = builder.buildBuyInstructions({
+  payer: payerPubkey,
+  outputMint: tokenMint,
+  inputAmount: 1_000_000_000,
+  slippageBasisPoints: 500, // 5%
+  bondingCurve: bondingCurvePubkey,
+  creatorVault: creatorVaultPubkey,
+  associatedBondingCurve: abcPubkey,
+});
+```
+
+### Hot Path Execution (Zero-RPC Trading)
+
+```typescript
+import { HotPathExecutor, HotPathState } from 'sol-trade-sdk/hotpath';
+
+// Initialize hot path state with pre-fetched data
+const state = new HotPathState();
+await state.prefetchBlockhash(rpcClient);
+await state.cacheAccount(tokenAccountPubkey);
+
+// Execute without any RPC calls during trading
+const executor = new HotPathExecutor(state);
+const result = await executor.executeTrade(transaction);
+```
+
+### Trading with Factory
+
+```typescript
+import {
+  TradeExecutorFactory,
+  TradingClient,
+  DexType,
+} from 'sol-trade-sdk/trading';
+
+// Create factory with base executor
+const factory = new TradeExecutorFactory(baseExecutor);
+
+// Get DEX-specific executor
+const pumpfunExecutor = factory.getExecutor(DexType.PumpFun);
+
+// Create trading client
+const client = new TradingClient(factory);
+
+// Execute buy on PumpFun
+const result = await client.buy(DexType.PumpFun, params);
+console.log(`Result: ${result.signature}`);
+```
+
+## Security Features
+
+```typescript
+import {
+  SecureKeyStorage,
+  validateRpcUrl,
+  validateAmount,
+  validatePubkey,
+} from 'sol-trade-sdk/security';
+
+// Secure key storage with AES-256-GCM encryption
+const storage = SecureKeyStorage.fromKeyPair(keypair, 'optional_password');
+storage.unlock((kp) => {
+  const signature = kp.sign(message);
+  return signature;
+});
+storage.clear(); // Secure memory clearing
+
+// Input validation
+validateRpcUrl('https://api.mainnet-beta.solana.com');
+validateAmount(1_000_000_000, 'amount', { allowZero: false });
+validatePubkey(pubkeyString, 'tokenMint');
+```
+
+## Address Lookup Tables
+
+```typescript
+import {
+  fetchAddressLookupTableAccount,
+  AddressLookupTableCache,
+} from 'sol-trade-sdk/address-lookup';
+
+// Fetch ALT from chain
+const alt = await fetchAddressLookupTableAccount(rpc, altAddress);
+console.log(`ALT contains ${alt.addresses.length} addresses`);
+
+// Use cache for performance
+const cache = new AddressLookupTableCache(rpc);
+await cache.prefetch([altAddress1, altAddress2, altAddress3]);
+const cached = cache.get(altAddress1);
+```
+
 ## Subpath Imports
 
 ```typescript
@@ -85,66 +196,101 @@ console.log(`Transaction signature: ${result.signature}`);
 import { LRUCache } from 'sol-trade-sdk/cache';
 import { calculatePumpFunBuy } from 'sol-trade-sdk/calc';
 import { JitoClient } from 'sol-trade-sdk/swqos';
-```
-
-## Security Features
-
-```typescript
-import { randomBytes } from 'crypto';
-
-// Cryptographically secure randomness for fee recipient selection
-const randomIndex = randomBytes(1)[0] % MAYHEM_FEE_RECIPIENTS.length;
-
-// Integer overflow protection in calculations
-import { calculateFee } from 'sol-trade-sdk/calc';
-const fee = calculateFee(amount, feeBasisPoints); // Throws on overflow
+import { HotPathExecutor } from 'sol-trade-sdk/hotpath';
+import { SecureKeyStorage } from 'sol-trade-sdk/security';
+import { TradeExecutorFactory } from 'sol-trade-sdk/trading';
 ```
 
 ## Architecture
 
 | Module | Description |
 |--------|-------------|
+| `address-lookup` | Address Lookup Table support with caching |
 | `cache` | LRU, TTL, and sharded caches |
 | `calc` | AMM calculations for all DEXes with overflow protection |
+| `common` | Core types, gas strategies, bonding curves |
+| `execution` | Branch optimization, prefetching |
 | `hotpath` | Zero-RPC hot path execution |
-| `instruction` | Instruction builders with secure randomness |
+| `instruction` | Instruction builders for all DEXes |
+| `middleware` | Instruction middleware system |
 | `pool` | Connection and worker pools |
 | `rpc` | High-performance RPC clients |
+| `security` | Secure key storage, validators |
 | `seed` | PDA derivation for all protocols |
-| `swqos` | MEV provider clients |
-| `trading` | High-performance trade executor |
+| `swqos` | MEV provider clients (19 providers) |
+| `trading` | High-performance trade executor with factory |
 
 ## Supported Protocols
 
 ### PumpFun
-- Bonding curve calculations
+- Bonding curve calculations with creator fee support
 - Buy/Sell instruction building
-- PDA derivation
+- PDA derivation for bonding curve and associated accounts
 
 ### PumpSwap
-- Pool calculations
-- Fee breakdown (LP, protocol, curve)
-- Instruction building
+- Pool calculations with LP/protocol/creator fees
+- Buy/Sell instruction building
+- Mayhem mode support
+
+### Bonk
+- Virtual/real reserve calculations
+- Protocol fee handling
 
 ### Raydium
-- AMM V4 calculations
+- AMM V4 calculations with constant product
 - CPMM calculations
 - Authority PDA derivation
 
 ### Meteora
-- DAMM V2 support
+- DAMM V2 swap calculations
 - Pool PDA derivation
 
-## SWQoS Providers
+## SWQoS Providers (19 Total)
 
 | Provider | Min Tip | Features |
 |----------|---------|----------|
-| Jito | 0.001 SOL | Bundle support, gRPC |
-| Bloxroute | 0.0003 SOL | High reliability |
-| ZeroSlot | 0.0001 SOL | Low latency |
+| Jito | 0.001 SOL | Bundle support, gRPC, multi-region |
+| Bloxroute | 0.0003 SOL | High reliability, global distribution |
+| ZeroSlot | 0.0001 SOL | Zero-slot landing |
+| NextBlock | 0.0001 SOL | Next block priority |
 | Temporal | 0.0001 SOL | Fast confirmation |
+| Node1 | 0.0001 SOL | Direct validator access |
 | FlashBlock | 0.0001 SOL | Competitive pricing |
-| Helius | 0.000005 SOL | SWQoS-only mode |
+| BlockRazor | 0.0001 SOL | MEV protection |
+| Astralane | 0.0001 SOL | Fast submission |
+| Stellium | 0.0001 SOL | Global infrastructure |
+| Lightspeed | 0.0001 SOL | Low latency |
+| Soyas | 0.0001 SOL | MEV protection |
+| Speedlanding | 0.0001 SOL | Fast landing |
+| Helius | 0.000005 SOL | SWQoS-only mode, enhanced APIs |
+| Triton | Variable | Enterprise RPC |
+| QuickNode | Variable | Enterprise RPC |
+| Syndica | Variable | Enterprise RPC |
+| Figment | Variable | Enterprise RPC |
+| Alchemy | Variable | Enterprise RPC |
+
+## Middleware System
+
+```typescript
+import {
+  MiddlewareManager,
+  ValidationMiddleware,
+  TimerMiddleware,
+  MetricsMiddleware,
+} from 'sol-trade-sdk/middleware';
+
+const manager = new MiddlewareManager();
+manager.addMiddleware(new ValidationMiddleware({ maxInstructions: 100 }));
+manager.addMiddleware(new TimerMiddleware());
+manager.addMiddleware(new MetricsMiddleware());
+
+// Apply middlewares to instructions
+const processed = manager.applyMiddlewaresProcessProtocolInstructions(
+  instructions,
+  'PumpFun',
+  true // isBuy
+);
+```
 
 ## Requirements
 
@@ -177,6 +323,6 @@ MIT License
 ## Contact
 
 - Official Website: https://fnzero.dev/
-- Project Repository: https://github.com/0xfnzero/sol-trade-sdk-ts
+- Project Repository: https://github.com/0xfnzero/sol-trade-sdk-nodejs
 - Telegram Group: https://t.me/fnzero_group
 - Discord: https://discord.gg/vuazbGkqQE

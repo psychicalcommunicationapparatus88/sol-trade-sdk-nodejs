@@ -351,3 +351,436 @@ export function getPoolPDA(baseMint: PublicKey, quoteMint: PublicKey): PublicKey
   );
   return pda;
 }
+
+// ===== PumpSwap Instruction Builders =====
+
+/**
+ * Build PumpSwap swap instruction
+ */
+export function buildPumpSwapSwapInstruction(params: {
+  payer: PublicKey;
+  pool: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  userBaseTokenAccount: PublicKey;
+  userQuoteTokenAccount: PublicKey;
+  baseVault: PublicKey;
+  quoteVault: PublicKey;
+  tokenProgram: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+  isBuy: boolean;
+}): TransactionInstruction {
+  const {
+    payer,
+    pool,
+    baseMint,
+    quoteMint,
+    userBaseTokenAccount,
+    userQuoteTokenAccount,
+    baseVault,
+    quoteVault,
+    tokenProgram,
+    amountIn,
+    minimumAmountOut,
+    isBuy,
+  } = params;
+
+  // Build instruction data
+  const data = Buffer.alloc(24);
+  PUMPSWAP_DISCRIMINATORS.SWAP.copy(data, 0);
+  data.writeBigUInt64LE(amountIn, 8);
+  data.writeBigUInt64LE(minimumAmountOut, 16);
+
+  const keys = [
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: pool, isSigner: false, isWritable: true },
+    { pubkey: isBuy ? quoteMint : baseMint, isSigner: false, isWritable: false },
+    { pubkey: isBuy ? baseMint : quoteMint, isSigner: false, isWritable: false },
+    { pubkey: isBuy ? userQuoteTokenAccount : userBaseTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: isBuy ? userBaseTokenAccount : userQuoteTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: isBuy ? quoteVault : baseVault, isSigner: false, isWritable: true },
+    { pubkey: isBuy ? baseVault : quoteVault, isSigner: false, isWritable: true },
+    { pubkey: tokenProgram, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: PUMPSWAP_PROGRAM,
+    data,
+  });
+}
+
+/**
+ * Build PumpSwap buy instruction
+ */
+export function buildPumpSwapBuyInstruction(params: {
+  payer: PublicKey;
+  pool: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  userBaseTokenAccount: PublicKey;
+  userQuoteTokenAccount: PublicKey;
+  baseVault: PublicKey;
+  quoteVault: PublicKey;
+  tokenProgram: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  return buildPumpSwapSwapInstruction({ ...params, isBuy: true });
+}
+
+/**
+ * Build PumpSwap sell instruction
+ */
+export function buildPumpSwapSellInstruction(params: {
+  payer: PublicKey;
+  pool: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  userBaseTokenAccount: PublicKey;
+  userQuoteTokenAccount: PublicKey;
+  baseVault: PublicKey;
+  quoteVault: PublicKey;
+  tokenProgram: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  return buildPumpSwapSwapInstruction({ ...params, isBuy: false });
+}
+
+// ===== Bonk Instruction Builders =====
+
+// Bonk Program and discriminators
+const BONK_PROGRAM = new PublicKey('bonkQ4LHaM1G1hPpGeSpqAh3MCRtg1E3LiQtuYMLM4K');
+const BONK_BUY_DISCRIMINATOR = Buffer.from([102, 6, 61, 18, 1, 218, 235, 234]);
+const BONK_SELL_DISCRIMINATOR = Buffer.from([51, 230, 133, 164, 1, 127, 131, 173]);
+
+/**
+ * Build Bonk buy instruction
+ */
+export function buildBonkBuyInstruction(params: {
+  payer: PublicKey;
+  poolState: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  baseVault: PublicKey;
+  quoteVault: PublicKey;
+  platformConfig: PublicKey;
+  platformAssociatedAccount: PublicKey;
+  creatorAssociatedAccount: PublicKey;
+  globalConfig: PublicKey;
+  userBaseTokenAccount: PublicKey;
+  userQuoteTokenAccount: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  const {
+    payer,
+    poolState,
+    baseMint,
+    quoteMint,
+    baseVault,
+    quoteVault,
+    platformConfig,
+    platformAssociatedAccount,
+    creatorAssociatedAccount,
+    globalConfig,
+    userBaseTokenAccount,
+    userQuoteTokenAccount,
+    amountIn,
+    minimumAmountOut,
+  } = params;
+
+  const data = Buffer.alloc(24);
+  BONK_BUY_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(amountIn, 8);
+  data.writeBigUInt64LE(minimumAmountOut, 16);
+
+  const keys = [
+    { pubkey: poolState, isSigner: false, isWritable: true },
+    { pubkey: baseMint, isSigner: false, isWritable: false },
+    { pubkey: quoteMint, isSigner: false, isWritable: false },
+    { pubkey: baseVault, isSigner: false, isWritable: true },
+    { pubkey: quoteVault, isSigner: false, isWritable: true },
+    { pubkey: platformConfig, isSigner: false, isWritable: false },
+    { pubkey: platformAssociatedAccount, isSigner: false, isWritable: true },
+    { pubkey: creatorAssociatedAccount, isSigner: false, isWritable: true },
+    { pubkey: globalConfig, isSigner: false, isWritable: false },
+    { pubkey: userBaseTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: userQuoteTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: TOKEN_PROGRAM, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: BONK_PROGRAM,
+    data,
+  });
+}
+
+/**
+ * Build Bonk sell instruction
+ */
+export function buildBonkSellInstruction(params: {
+  payer: PublicKey;
+  poolState: PublicKey;
+  baseMint: PublicKey;
+  quoteMint: PublicKey;
+  baseVault: PublicKey;
+  quoteVault: PublicKey;
+  platformConfig: PublicKey;
+  platformAssociatedAccount: PublicKey;
+  creatorAssociatedAccount: PublicKey;
+  globalConfig: PublicKey;
+  userBaseTokenAccount: PublicKey;
+  userQuoteTokenAccount: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  const data = Buffer.alloc(24);
+  BONK_SELL_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(params.amountIn, 8);
+  data.writeBigUInt64LE(params.minimumAmountOut, 16);
+
+  const keys = [
+    { pubkey: params.poolState, isSigner: false, isWritable: true },
+    { pubkey: params.baseMint, isSigner: false, isWritable: false },
+    { pubkey: params.quoteMint, isSigner: false, isWritable: false },
+    { pubkey: params.baseVault, isSigner: false, isWritable: true },
+    { pubkey: params.quoteVault, isSigner: false, isWritable: true },
+    { pubkey: params.platformConfig, isSigner: false, isWritable: false },
+    { pubkey: params.platformAssociatedAccount, isSigner: false, isWritable: true },
+    { pubkey: params.creatorAssociatedAccount, isSigner: false, isWritable: true },
+    { pubkey: params.globalConfig, isSigner: false, isWritable: false },
+    { pubkey: params.userBaseTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: params.userQuoteTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: params.payer, isSigner: true, isWritable: true },
+    { pubkey: TOKEN_PROGRAM, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: BONK_PROGRAM,
+    data,
+  });
+}
+
+// ===== Raydium CPMM Instruction Builders =====
+
+const RAYDIUM_CPMM_PROGRAM = new PublicKey('CPMMoo8L3F4NbTuvAoiQ53Jx4JQk7e8mL8pF6WwQhUJi');
+const RAYDIUM_CPMM_SWAP_DISCRIMINATOR = Buffer.from([248, 198, 158, 145, 225, 117, 135, 200]);
+
+/**
+ * Build Raydium CPMM swap instruction
+ */
+export function buildRaydiumCpmmSwapInstruction(params: {
+  payer: PublicKey;
+  ammConfig: PublicKey;
+  poolState: PublicKey;
+  inputTokenAccount: PublicKey;
+  outputTokenAccount: PublicKey;
+  inputVault: PublicKey;
+  outputVault: PublicKey;
+  inputTokenProgram: PublicKey;
+  outputTokenProgram: PublicKey;
+  inputMint: PublicKey;
+  outputMint: PublicKey;
+  observationState: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  const {
+    payer,
+    ammConfig,
+    poolState,
+    inputTokenAccount,
+    outputTokenAccount,
+    inputVault,
+    outputVault,
+    inputTokenProgram,
+    outputTokenProgram,
+    inputMint,
+    outputMint,
+    observationState,
+    amountIn,
+    minimumAmountOut,
+  } = params;
+
+  const data = Buffer.alloc(24);
+  RAYDIUM_CPMM_SWAP_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(amountIn, 8);
+  data.writeBigUInt64LE(minimumAmountOut, 16);
+
+  const keys = [
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // authority
+    { pubkey: ammConfig, isSigner: false, isWritable: false },
+    { pubkey: poolState, isSigner: false, isWritable: true },
+    { pubkey: inputTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: outputTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: inputVault, isSigner: false, isWritable: true },
+    { pubkey: outputVault, isSigner: false, isWritable: true },
+    { pubkey: inputTokenProgram, isSigner: false, isWritable: false },
+    { pubkey: outputTokenProgram, isSigner: false, isWritable: false },
+    { pubkey: inputMint, isSigner: false, isWritable: false },
+    { pubkey: outputMint, isSigner: false, isWritable: false },
+    { pubkey: observationState, isSigner: false, isWritable: true },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: RAYDIUM_CPMM_PROGRAM,
+    data,
+  });
+}
+
+// ===== Raydium AMM V4 Instruction Builders =====
+
+const RAYDIUM_AMM_V4_PROGRAM = new PublicKey('675kPX9MHTjS2zt1qfr1Nhd3wZwJhndG6fJqMkFLy5RU');
+const RAYDIUM_AMM_V4_SWAP_DISCRIMINATOR = Buffer.from([248, 198, 158, 145, 225, 117, 135, 200]);
+
+/**
+ * Build Raydium AMM V4 swap instruction
+ */
+export function buildRaydiumAmmV4SwapInstruction(params: {
+  payer: PublicKey;
+  amm: PublicKey;
+  ammAuthority: PublicKey;
+  ammOpenOrders: PublicKey;
+  ammTargetOrders: PublicKey;
+  poolCoinTokenAccount: PublicKey;
+  poolPcTokenAccount: PublicKey;
+  serumProgram: PublicKey;
+  serumMarket: PublicKey;
+  serumBids: PublicKey;
+  serumAsks: PublicKey;
+  serumEventQueue: PublicKey;
+  serumCoinVaultAccount: PublicKey;
+  serumPcVaultAccount: PublicKey;
+  serumVaultSigner: PublicKey;
+  userSourceTokenAccount: PublicKey;
+  userDestinationTokenAccount: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  const {
+    payer,
+    amm,
+    ammAuthority,
+    ammOpenOrders,
+    ammTargetOrders,
+    poolCoinTokenAccount,
+    poolPcTokenAccount,
+    serumProgram,
+    serumMarket,
+    serumBids,
+    serumAsks,
+    serumEventQueue,
+    serumCoinVaultAccount,
+    serumPcVaultAccount,
+    serumVaultSigner,
+    userSourceTokenAccount,
+    userDestinationTokenAccount,
+    amountIn,
+    minimumAmountOut,
+  } = params;
+
+  const data = Buffer.alloc(24);
+  RAYDIUM_AMM_V4_SWAP_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(amountIn, 8);
+  data.writeBigUInt64LE(minimumAmountOut, 16);
+
+  const keys = [
+    { pubkey: amm, isSigner: false, isWritable: true },
+    { pubkey: ammAuthority, isSigner: false, isWritable: false },
+    { pubkey: ammOpenOrders, isSigner: false, isWritable: true },
+    { pubkey: ammTargetOrders, isSigner: false, isWritable: true },
+    { pubkey: poolCoinTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: poolPcTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: serumProgram, isSigner: false, isWritable: false },
+    { pubkey: serumMarket, isSigner: false, isWritable: true },
+    { pubkey: serumBids, isSigner: false, isWritable: true },
+    { pubkey: serumAsks, isSigner: false, isWritable: true },
+    { pubkey: serumEventQueue, isSigner: false, isWritable: true },
+    { pubkey: serumCoinVaultAccount, isSigner: false, isWritable: true },
+    { pubkey: serumPcVaultAccount, isSigner: false, isWritable: true },
+    { pubkey: serumVaultSigner, isSigner: false, isWritable: false },
+    { pubkey: userSourceTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: userDestinationTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: payer, isSigner: true, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: RAYDIUM_AMM_V4_PROGRAM,
+    data,
+  });
+}
+
+// ===== Meteora DAMM V2 Instruction Builders =====
+
+const METEORA_DAMM_V2_PROGRAM = new PublicKey('Eo7WjKq67rjJQSZxSbjz3bH6qJiFv3z4hR5wT6y7U8v9');
+const METEORA_DAMM_V2_SWAP_DISCRIMINATOR = Buffer.from([248, 198, 158, 145, 225, 117, 135, 200]);
+
+/**
+ * Build Meteora DAMM V2 swap instruction
+ */
+export function buildMeteoraDammV2SwapInstruction(params: {
+  payer: PublicKey;
+  pool: PublicKey;
+  tokenAVault: PublicKey;
+  tokenBVault: PublicKey;
+  tokenAMint: PublicKey;
+  tokenBMint: PublicKey;
+  userSourceTokenAccount: PublicKey;
+  userDestinationTokenAccount: PublicKey;
+  tokenAProgram: PublicKey;
+  tokenBProgram: PublicKey;
+  amountIn: bigint;
+  minimumAmountOut: bigint;
+}): TransactionInstruction {
+  const {
+    payer,
+    pool,
+    tokenAVault,
+    tokenBVault,
+    tokenAMint,
+    tokenBMint,
+    userSourceTokenAccount,
+    userDestinationTokenAccount,
+    tokenAProgram,
+    tokenBProgram,
+    amountIn,
+    minimumAmountOut,
+  } = params;
+
+  const data = Buffer.alloc(24);
+  METEORA_DAMM_V2_SWAP_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(amountIn, 8);
+  data.writeBigUInt64LE(minimumAmountOut, 16);
+
+  const keys = [
+    { pubkey: payer, isSigner: true, isWritable: true },
+    { pubkey: pool, isSigner: false, isWritable: true },
+    { pubkey: tokenAVault, isSigner: false, isWritable: true },
+    { pubkey: tokenBVault, isSigner: false, isWritable: true },
+    { pubkey: tokenAMint, isSigner: false, isWritable: false },
+    { pubkey: tokenBMint, isSigner: false, isWritable: false },
+    { pubkey: userSourceTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: userDestinationTokenAccount, isSigner: false, isWritable: true },
+    { pubkey: tokenAProgram, isSigner: false, isWritable: false },
+    { pubkey: tokenBProgram, isSigner: false, isWritable: false },
+    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+  ];
+
+  return new TransactionInstruction({
+    keys,
+    programId: METEORA_DAMM_V2_PROGRAM,
+    data,
+  });
+}
