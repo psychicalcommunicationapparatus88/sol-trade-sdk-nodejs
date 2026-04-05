@@ -147,6 +147,15 @@ const result = await client.buy(DexType.PumpFun, params);
 console.log(`Result: ${result.signature}`);
 ```
 
+## Usage Examples Summary
+
+| Description | File | Run Command |
+|-------------|------|-------------|
+| Create and configure TradingClient instance | [trading_client.ts](examples/trading_client.ts) | `npx ts-node examples/trading_client.ts` |
+| Share infrastructure across multiple wallets | [shared_infrastructure.ts](examples/shared_infrastructure.ts) | `npx ts-node examples/shared_infrastructure.ts` |
+| PumpFun token sniping trading | [pumpfun_sniper_trading.ts](examples/pumpfun_sniper_trading.ts) | `npx ts-node examples/pumpfun_sniper_trading.ts` |
+| Gas fee strategy example | [gas_fee_strategy.ts](examples/gas_fee_strategy.ts) | `npx ts-node examples/gas_fee_strategy.ts` |
+
 ## Security Features
 
 ```typescript
