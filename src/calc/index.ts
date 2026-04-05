@@ -117,13 +117,13 @@ export function calculateWithSlippageSell(amount: bigint, basisPoints: bigint): 
 }
 
 // ===== PumpFun Constants =====
-
+// Values from Rust: src/instruction/utils/pumpfun.rs global_constants
 export const PUMPFUN_CONSTANTS = {
-  FEE_BASIS_POINTS: BigInt(100),   // 1%
-  CREATOR_FEE: BigInt(50),          // 0.5%
+  FEE_BASIS_POINTS: BigInt(95),    // Protocol fee (NOT 100!)
+  CREATOR_FEE: BigInt(30),          // Creator fee (NOT 50!)
   INITIAL_VIRTUAL_TOKEN_RESERVES: BigInt('1073000000000000'),
   INITIAL_VIRTUAL_SOL_RESERVES: BigInt('30000000000'),
-  INITIAL_REAL_TOKEN_RESERVES: BigInt('793000000000000'),
+  INITIAL_REAL_TOKEN_RESERVES: BigInt('793100000000000'), // Fixed: was 793000000000000
   TOKEN_TOTAL_SUPPLY: BigInt('1000000000000000'),
 };
 
@@ -202,11 +202,11 @@ export function getSellSolAmountFromTokenAmount(
 }
 
 // ===== PumpSwap Constants =====
-
+// Values from Rust: src/instruction/utils/pumpswap.rs accounts
 export const PUMPSWAP_CONSTANTS = {
-  LP_FEE_BASIS_POINTS: BigInt(20),          // 0.2%
-  PROTOCOL_FEE_BASIS_POINTS: BigInt(20),    // 0.2%
-  COIN_CREATOR_FEE_BASIS_POINTS: BigInt(10), // 0.1%
+  LP_FEE_BASIS_POINTS: BigInt(25),          // 0.25% (was 20)
+  PROTOCOL_FEE_BASIS_POINTS: BigInt(5),     // 0.05% (was 20)
+  COIN_CREATOR_FEE_BASIS_POINTS: BigInt(5), // 0.05% (was 10)
 };
 
 export interface BuyBaseInputResult {
