@@ -1,7 +1,10 @@
-# Sol Trade SDK for Node.js
+<div align="center">
+    <h1>🚀 Sol Trade SDK for Node.js</h1>
+    <h3><em>全面的 TypeScript SDK，用于无缝 Solana DEX 交易</em></h3>
+</div>
 
 <p align="center">
-    <strong>高性能 Node.js SDK，用于低延迟 Solana DEX 交易</strong>
+    <strong>一个面向低延迟 Solana DEX 交易机器人的高性能 TypeScript SDK。该 SDK 以速度和效率为核心设计，支持与 PumpFun、Pump AMM（PumpSwap）、Bonk、Meteora DAMM v2、Raydium AMM v4 以及 Raydium CPMM 进行无缝、高吞吐量的交互，适用于对延迟高度敏感的交易策略。</strong>
 </p>
 
 <p align="center">
@@ -23,11 +26,31 @@
 </p>
 
 <p align="center">
-    <a href="README.md">English</a> |
+    <a href="https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/README_CN.md">中文</a> |
+    <a href="https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/README.md">English</a> |
     <a href="https://fnzero.dev/">官网</a> |
     <a href="https://t.me/fnzero_group">Telegram</a> |
     <a href="https://discord.gg/vuazbGkqQE">Discord</a>
 </p>
+
+## 📋 目录
+
+- [✨ 项目特性](#-项目特性)
+- [📦 安装](#-安装)
+- [🛠️ 使用示例](#️-使用示例)
+  - [📋 使用示例](#-使用示例)
+  - [⚡ 交易参数](#-交易参数)
+  - [📊 使用示例汇总表格](#-使用示例汇总表格)
+  - [⚙️ SWQoS 服务配置说明](#️-swqos-服务配置说明)
+  - [🔧 中间件系统说明](#-中间件系统说明)
+  - [🔍 地址查找表](#-地址查找表)
+  - [🔍 Nonce 缓存](#-nonce-缓存)
+- [💰 Cashback 支持（PumpFun / PumpSwap）](#-cashback-支持pumpfun--pumpswap)
+- [🛡️ MEV 保护服务](#️-mev-保护服务)
+- [📁 项目结构](#-项目结构)
+- [📄 许可证](#-许可证)
+- [💬 联系方式](#-联系方式)
+- [⚠️ 重要注意事项](#️-重要注意事项)
 
 ---
 
@@ -42,22 +65,50 @@
 | **Python** | [sol-trade-sdk-python](https://github.com/0xfnzero/sol-trade-sdk-python) | 原生 async/await 支持 |
 | **Go** | [sol-trade-sdk-golang](https://github.com/0xfnzero/sol-trade-sdk-golang) | 并发安全，goroutine 支持 |
 
----
+## ✨ 项目特性
 
-一个全面的高性能 TypeScript SDK，用于 Solana DEX 交易，支持多种协议和 MEV 提供商。
+1. **PumpFun 交易**: 支持`购买`、`卖出`功能
+2. **PumpSwap 交易**: 支持 PumpSwap 池的交易操作
+3. **Bonk 交易**: 支持 Bonk 的交易操作
+4. **Raydium CPMM 交易**: 支持 Raydium CPMM (Concentrated Pool Market Maker) 的交易操作
+5. **Raydium AMM V4 交易**: 支持 Raydium AMM V4 (Automated Market Maker) 的交易操作
+6. **Meteora DAMM V2 交易**: 支持 Meteora DAMM V2 (Dynamic AMM) 的交易操作
+7. **多种 MEV 保护**: 支持 Jito、Nextblock、ZeroSlot、Temporal、Bloxroute、FlashBlock、BlockRazor、Node1、Astralane 等服务
+8. **并发交易**: 同时使用多个 MEV 服务发送交易，最快的成功，其他失败
+9. **统一交易接口**: 使用统一的交易协议类型进行交易操作
+10. **中间件系统**: 支持自定义指令中间件，可在交易执行前对指令进行修改、添加或移除
+11. **共享基础设施**: 多钱包可共享同一套 RPC 与 SWQoS 客户端，降低资源占用
 
-## 特性
+## 📦 安装
 
-- **多 DEX 支持**: PumpFun、PumpSwap、Bonk、Raydium AMM V4、Raydium CPMM、Meteora DAMM V2
-- **SWQoS 集成**: 多个 MEV 提供商用于交易提交
-- **高性能**: LRU/TTL/分片缓存、连接池、并行执行
-- **低延迟**: 针对亚秒级交易执行优化
-- **安全优先**: 整数溢出保护、安全密钥存储、输入验证
-- **零-RPC 热路径**: 所有 RPC 调用在交易执行前完成
-- **类型安全**: 完整的 TypeScript 支持和全面的类型定义
-- **模块化设计**: 按需使用
+### 直接克隆（推荐）
 
-## 安装
+将此项目克隆到您的项目目录：
+
+```bash
+cd your_project_root_directory
+git clone https://github.com/0xfnzero/sol-trade-sdk-nodejs
+```
+
+安装依赖并构建：
+
+```bash
+cd sol-trade-sdk-nodejs
+npm install
+npm run build
+```
+
+在您的 `package.json` 中添加：
+
+```json
+{
+  "dependencies": {
+    "sol-trade-sdk": "./sol-trade-sdk-nodejs"
+  }
+}
+```
+
+### 使用 NPM
 
 ```bash
 npm install sol-trade-sdk
@@ -67,130 +118,188 @@ yarn add sol-trade-sdk
 pnpm add sol-trade-sdk
 ```
 
-## 快速开始
+## 🛠️ 使用示例
 
-### 基本交易
+### 📋 使用示例
+
+#### 1. 创建 TradingClient 实例
+
+您可以参考 [示例：创建 TradingClient 实例](examples/trading_client.ts)。
+
+**方法一：简单方式（单钱包）**
+```typescript
+import { TradingClient, TradeConfig, SwqosConfig, SwqosRegion } from 'sol-trade-sdk';
+
+// 钱包
+const payer = Keypair.fromSecretKey(/* 您的密钥 */);
+
+// RPC URL
+const rpcUrl = "https://mainnet.helius-rpc.com/?api-key=xxxxxx";
+
+// 可配置多个 SWQoS 服务
+const swqosConfigs: SwqosConfig[] = [
+  { type: 'Default', rpcUrl },
+  { type: 'Jito', uuid: "your_uuid", region: SwqosRegion.Frankfurt },
+  { type: 'Bloxroute', apiToken: "your_api_token", region: SwqosRegion.Frankfurt },
+  { type: 'Astralane', apiKey: "your_api_key", region: SwqosRegion.Frankfurt },
+];
+
+// 创建 TradeConfig 实例
+const tradeConfig = new TradeConfig(rpcUrl, swqosConfigs);
+
+// 创建 TradingClient
+const client = new TradingClient(payer, tradeConfig);
+```
+
+**方法二：共享基础设施（多钱包）**
+
+对于多钱包场景，创建一次基础设施并在钱包间共享。
+参见 [示例：共享基础设施](examples/shared_infrastructure.ts)。
 
 ```typescript
-import {
-  GasFeeStrategy,
-  TradeExecutor,
-  SwqosType,
-  TradeType,
-} from 'sol-trade-sdk';
+import { TradingInfrastructure, InfrastructureConfig } from 'sol-trade-sdk';
 
-// 创建 Gas 策略
-const gasStrategy = new GasFeeStrategy();
-gasStrategy.setGlobalFeeStrategy(200000, 200000, 100000, 100000, 0.001, 0.001);
+// 创建一次基础设施（开销大）
+const infraConfig = new InfrastructureConfig(rpcUrl, swqosConfigs);
+const infrastructure = new TradingInfrastructure(infraConfig);
 
-// 创建交易执行器
-const executor = new TradeExecutor({
-  rpcUrl: 'https://api.mainnet-beta.solana.com',
-  swqosConfigs: [{ type: SwqosType.Jito }],
-});
+// 创建多个客户端共享同一基础设施（快速）
+const client1 = TradingClient.fromInfrastructure(payer1, infrastructure);
+const client2 = TradingClient.fromInfrastructure(payer2, infrastructure);
+```
 
-// 执行交易
-const result = await executor.execute(TradeType.Buy, transactionBuffer);
+#### 2. 配置 Gas 费策略
+
+```typescript
+import { GasFeeStrategy } from 'sol-trade-sdk';
+
+// 创建 GasFeeStrategy 实例
+const gasFeeStrategy = new GasFeeStrategy();
+// 设置全局策略
+gasFeeStrategy.setGlobalFeeStrategy(150000, 150000, 500000, 500000, 0.001, 0.001);
+```
+
+#### 3. 构建交易参数
+
+```typescript
+import { TradeBuyParams, DexType, TradeTokenType, DexParamEnum } from 'sol-trade-sdk';
+
+const buyParams: TradeBuyParams = {
+  dexType: DexType.PumpSwap,
+  inputTokenType: TradeTokenType.WSOL,
+  mint: mintPubkey,
+  inputTokenAmount: buySolAmount,
+  slippageBasisPoints: 500,
+  recentBlockhash: recentBlockhash,
+  // 使用 DexParamEnum 实现类型安全的协议参数
+  extensionParams: { type: 'PumpSwap', params: pumpSwapParams },
+  addressLookupTableAccount: null,
+  waitTransactionConfirmed: true,
+  createInputTokenAta: true,
+  closeInputTokenAta: true,
+  createMintAta: true,
+  durableNonce: null,
+  fixedOutputTokenAmount: null,
+  gasFeeStrategy: gasFeeStrategy,
+  simulate: false,
+};
+```
+
+#### 4. 执行交易
+
+```typescript
+const result = await client.buy(buyParams);
 console.log(`交易签名: ${result.signature}`);
 ```
 
-### PumpFun 交易
+### ⚡ 交易参数
+
+关于所有交易参数（包括 `TradeBuyParams` 和 `TradeSellParams`）的详细信息，请参阅交易参数文档。
+
+#### 关于 ShredStream
+
+使用 shred 订阅事件时，由于 shred 的特性，您无法获取交易事件的完整信息。
+在使用时，请确保您的交易逻辑所依赖的参数在 shred 中可用。
+
+### 📊 使用示例汇总表格
+
+| 描述 | 运行命令 | 源码 |
+|------|----------|------|
+| 创建并配置 TradingClient 实例 | `npx ts-node examples/trading_client.ts` | [examples/trading_client.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/trading_client.ts) |
+| 多钱包共享基础设施 | `npx ts-node examples/shared_infrastructure.ts` | [examples/shared_infrastructure.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/shared_infrastructure.ts) |
+| PumpFun 代币狙击交易 | `npx ts-node examples/pumpfun_sniper_trading.ts` | [examples/pumpfun_sniper_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpfun_sniper_trading.ts) |
+| PumpFun 代币跟单交易 | `npx ts-node examples/pumpfun_copy_trading.ts` | [examples/pumpfun_copy_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpfun_copy_trading.ts) |
+| PumpSwap 交易操作 | `npx ts-node examples/pumpswap_trading.ts` | [examples/pumpswap_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpswap_trading.ts) |
+| PumpSwap 直接交易（通过 RPC） | `npx ts-node examples/pumpswap_direct_trading.ts` | [examples/pumpswap_direct_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpswap_direct_trading.ts) |
+| Raydium CPMM 交易操作 | `npx ts-node examples/raydium_cpmm_trading.ts` | [examples/raydium_cpmm_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/raydium_cpmm_trading.ts) |
+| Raydium AMM V4 交易操作 | `npx ts-node examples/raydium_amm_v4_trading.ts` | [examples/raydium_amm_v4_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/raydium_amm_v4_trading.ts) |
+| Meteora DAMM V2 交易操作 | `npx ts-node examples/meteora_damm_v2_trading.ts` | [examples/meteora_damm_v2_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/meteora_damm_v2_trading.ts) |
+| Bonk 代币狙击交易 | `npx ts-node examples/bonk_sniper_trading.ts` | [examples/bonk_sniper_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/bonk_sniper_trading.ts) |
+| Bonk 代币跟单交易 | `npx ts-node examples/bonk_copy_trading.ts` | [examples/bonk_copy_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/bonk_copy_trading.ts) |
+| 自定义指令中间件示例 | `npx ts-node examples/middleware_system.ts` | [examples/middleware_system.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/middleware_system.ts) |
+| 地址查找表示例 | `npx ts-node examples/address_lookup.ts` | [examples/address_lookup.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/address_lookup.ts) |
+| Nonce 缓存（持久 Nonce）示例 | `npx ts-node examples/nonce_cache.ts` | [examples/nonce_cache.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/nonce_cache.ts) |
+| SOL 与 WSOL 互转示例 | `npx ts-node examples/wsol_wrapper.ts` | [examples/wsol_wrapper.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/wsol_wrapper.ts) |
+| Seed 交易示例 | `npx ts-node examples/seed_trading.ts` | [examples/seed_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/seed_trading.ts) |
+| Gas 费策略示例 | `npx ts-node examples/gas_fee_strategy.ts` | [examples/gas_fee_strategy.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/gas_fee_strategy.ts) |
+| 热路径交易（零 RPC） | `npx ts-node examples/hot_path_trading.ts` | [examples/hot_path_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/hot_path_trading.ts) |
+
+### ⚙️ SWQoS 服务配置说明
+
+配置 SWQoS 服务时，请注意各服务的不同参数要求：
+
+- **Jito**: 第一个参数是 UUID（如果没有 UUID，传空字符串 `""`）
+- **其他 MEV 服务**: 第一个参数是 API Token
+
+#### 自定义 URL 支持
+
+每个 SWQoS 服务都支持可选的自定义 URL 参数：
 
 ```typescript
-import { PumpFunInstructionBuilder } from 'sol-trade-sdk/instruction/pumpfun';
-import { getBuyTokenAmountFromSolAmount } from 'sol-trade-sdk/calc/pumpfun';
+// 使用自定义 URL
+const jitoConfig: SwqosConfig = {
+  type: 'Jito',
+  uuid: "your_uuid",
+  region: SwqosRegion.Frankfurt,
+  customUrl: "https://custom-jito-endpoint.com"
+};
 
-// 计算输入 SOL 可获得的代币数量
-const tokens = getBuyTokenAmountFromSolAmount(
-  1_073_000_000_000_000, // virtualTokenReserves
-  30_000_000_000,         // virtualSolReserves
-  793_000_000_000_000,    // realTokenReserves
-  true,                   // hasCreator
-  1_000_000_000           // amount (1 SOL)
-);
-
-// 构建买入指令
-const builder = new PumpFunInstructionBuilder();
-const instructions = builder.buildBuyInstructions({
-  payer: payerPubkey,
-  outputMint: tokenMint,
-  inputAmount: 1_000_000_000,
-  slippageBasisPoints: 500, // 5%
-  bondingCurve: bondingCurvePubkey,
-  creatorVault: creatorVaultPubkey,
-  associatedBondingCurve: abcPubkey,
-});
+// 使用默认区域端点
+const bloxrouteConfig: SwqosConfig = {
+  type: 'Bloxroute',
+  apiToken: "your_api_token",
+  region: SwqosRegion.NewYork
+};
 ```
 
-### 热路径执行（零-RPC 交易）
+**URL 优先级逻辑**:
+- 如果提供了自定义 URL，将使用该 URL 而非区域端点
+- 如果未提供自定义 URL，系统将使用指定区域的默认端点
+- 这在保持向后兼容性的同时提供了最大的灵活性
+
+使用多个 MEV 服务时，您需要使用 `Durable Nonce`。您需要使用 `fetchNonceInfo` 函数获取最新的 `nonce` 值，并在交易时将其作为 `durableNonce` 使用。
+
+---
+
+### 🔧 中间件系统说明
+
+SDK 提供了强大的中间件系统，允许您在交易执行前修改、添加或移除指令。中间件按添加顺序执行：
 
 ```typescript
-import { HotPathExecutor, HotPathState } from 'sol-trade-sdk/hotpath';
+import { MiddlewareManager, ValidationMiddleware, TimerMiddleware } from 'sol-trade-sdk';
 
-// 使用预取数据初始化热路径状态
-const state = new HotPathState();
-await state.prefetchBlockhash(rpcClient);
-await state.cacheAccount(tokenAccountPubkey);
-
-// 在交易期间无需任何 RPC 调用即可执行
-const executor = new HotPathExecutor(state);
-const result = await executor.executeTrade(transaction);
+const manager = new MiddlewareManager()
+  .addMiddleware(new FirstMiddleware())   // 最先执行
+  .addMiddleware(new SecondMiddleware())  // 其次执行
+  .addMiddleware(new ThirdMiddleware());  // 最后执行
 ```
 
-### 使用工厂模式交易
+### 🔍 地址查找表
+
+地址查找表（ALT）允许您通过以紧凑的表格格式存储常用地址来优化交易大小并降低费用。
 
 ```typescript
-import {
-  TradeExecutorFactory,
-  TradingClient,
-  DexType,
-} from 'sol-trade-sdk/trading';
-
-// 使用基础执行器创建工厂
-const factory = new TradeExecutorFactory(baseExecutor);
-
-// 获取 DEX 特定执行器
-const pumpfunExecutor = factory.getExecutor(DexType.PumpFun);
-
-// 创建交易客户端
-const client = new TradingClient(factory);
-
-// 在 PumpFun 上执行买入
-const result = await client.buy(DexType.PumpFun, params);
-console.log(`结果: ${result.signature}`);
-```
-
-## 安全特性
-
-```typescript
-import {
-  SecureKeyStorage,
-  validateRpcUrl,
-  validateAmount,
-  validatePubkey,
-} from 'sol-trade-sdk/security';
-
-// 带 AES-256-GCM 加密的安全密钥存储
-const storage = SecureKeyStorage.fromKeyPair(keypair, '可选密码');
-storage.unlock((kp) => {
-  const signature = kp.sign(message);
-  return signature;
-});
-storage.clear(); // 安全内存清除
-
-// 输入验证
-validateRpcUrl('https://api.mainnet-beta.solana.com');
-validateAmount(1_000_000_000, 'amount', { allowZero: false });
-validatePubkey(pubkeyString, 'tokenMint');
-```
-
-## 地址查找表
-
-```typescript
-import {
-  fetchAddressLookupTableAccount,
-  AddressLookupTableCache,
-} from 'sol-trade-sdk/address-lookup';
+import { fetchAddressLookupTableAccount, AddressLookupTableCache } from 'sol-trade-sdk';
 
 // 从链上获取 ALT
 const alt = await fetchAddressLookupTableAccount(rpc, altAddress);
@@ -202,116 +311,74 @@ await cache.prefetch([altAddress1, altAddress2, altAddress3]);
 const cached = cache.get(altAddress1);
 ```
 
-## 子路径导入
+### 🔍 Nonce 缓存
+
+使用持久 Nonce 实现交易重放保护并优化交易处理。
 
 ```typescript
-// 导入特定模块
-import { LRUCache } from 'sol-trade-sdk/cache';
-import { calculatePumpFunBuy } from 'sol-trade-sdk/calc';
-import { JitoClient } from 'sol-trade-sdk/swqos';
-import { HotPathExecutor } from 'sol-trade-sdk/hotpath';
-import { SecureKeyStorage } from 'sol-trade-sdk/security';
-import { TradeExecutorFactory } from 'sol-trade-sdk/trading';
+import { fetchNonceInfo, NonceCache } from 'sol-trade-sdk';
+
+// 获取 nonce 信息
+const nonceInfo = await fetchNonceInfo(rpc, nonceAccount);
 ```
 
-## 架构
+## 💰 Cashback 支持（PumpFun / PumpSwap）
 
-| 模块 | 描述 |
-|------|------|
-| `address-lookup` | 带缓存的地址查找表支持 |
-| `cache` | LRU、TTL 和分片缓存 |
-| `calc` | 带 `math/bits` 溢出保护的所有 DEX AMM 计算 |
-| `common` | 核心类型、Gas 策略、联合曲线 |
-| `execution` | 分支优化、预取 |
-| `hotpath` | 零-RPC 热路径执行 |
-| `instruction` | 所有 DEX 的指令构建器 |
-| `middleware` | 指令中间件系统 |
-| `pool` | 连接池和工作池 |
-| `rpc` | 高性能 RPC 客户端 |
-| `security` | 安全密钥存储、验证器 |
-| `seed` | 所有协议的 PDA 派生 |
-| `swqos` | MEV 提供商客户端（19 个提供商） |
-| `trading` | 带工厂的高性能交易执行器 |
+PumpFun 和 PumpSwap 为符合条件的代币支持 **cashback**：部分交易费用可以返还给用户。SDK **必须知道**代币是否启用了 cashback，以便买/卖指令包含正确的账户。
 
-## 支持的协议
+- **当参数来自 RPC 时**: 如果您使用 `PumpFunParams.fromMintByRpc` 或 `PumpSwapParams.fromPoolAddressByRpc`，SDK 会从链上读取 `isCashbackCoin`——无需额外步骤。
+- **当参数来自事件/解析器时**: 如果您从交易事件构建参数（例如 [sol-parser-sdk](https://github.com/0xfnzero/sol-parser-sdk)），您**必须**将 cashback 标志传递给 SDK：
+  - **PumpFun**: 从解析的事件构建参数时设置 `isCashbackCoin`。
+  - **PumpSwap**: 手动构建参数时设置 `isCashbackCoin` 字段。
 
-### PumpFun
-- 带创建者费用支持的联合曲线计算
-- 买卖指令构建
-- 联合曲线和关联账户的 PDA 派生
+## 🛡️ MEV 保护服务
 
-### PumpSwap
-- 带 LP/协议/创建者费用的池计算
-- 买卖指令构建
-- Mayhem 模式支持
+您可以通过官网申请密钥：[社区网站](https://fnzero.dev/swqos)
 
-### Bonk
-- 虚拟/真实储备计算
-- 协议费用处理
+- **Jito**: 高性能区块空间
+- **ZeroSlot**: 零延迟交易
+- **Temporal**: 时间敏感交易
+- **Bloxroute**: 区块链网络加速
+- **FlashBlock**: 高速交易执行（API 密钥认证）
+- **BlockRazor**: 高速交易执行（API 密钥认证）
+- **Node1**: 高速交易执行（API 密钥认证）
+- **Astralane**: 区块链网络加速
 
-### Raydium
-- 恒定乘积的 AMM V4 计算
-- CPMM 计算
-- 权限 PDA 派生
+## 📁 项目结构
 
-### Meteora
-- DAMM V2 交换计算
-- 池 PDA 派生
-
-## 中间件系统
-
-```typescript
-import {
-  MiddlewareManager,
-  ValidationMiddleware,
-  TimerMiddleware,
-  MetricsMiddleware,
-} from 'sol-trade-sdk/middleware';
-
-const manager = new MiddlewareManager();
-manager.addMiddleware(new ValidationMiddleware({ maxInstructions: 100 }));
-manager.addMiddleware(new TimerMiddleware());
-manager.addMiddleware(new MetricsMiddleware());
-
-// 将中间件应用于指令
-const processed = manager.applyMiddlewaresProcessProtocolInstructions(
-  instructions,
-  'PumpFun',
-  true // isBuy
-);
+```
+src/
+├── common/           # 通用功能和工具
+├── constants/        # 常量定义
+├── instruction/      # 指令构建
+│   └── utils/        # 指令工具
+├── swqos/            # MEV 服务客户端
+├── trading/          # 统一交易引擎
+│   ├── common/       # 交易通用工具
+│   ├── core/         # 核心交易引擎
+│   ├── middleware/   # 中间件系统
+│   └── factory.ts    # 交易工厂
+├── utils/            # 工具函数
+│   ├── calc/         # 金额计算工具
+│   └── price/        # 价格计算工具
+└── index.ts          # 主库文件
 ```
 
-## 环境要求
-
-- Node.js >= 18.0.0
-- TypeScript >= 5.3.0 (开发环境)
-
-## 脚本
-
-```bash
-# 构建
-npm run build
-
-# 开发
-npm run dev
-
-# 测试
-npm test
-
-# 代码检查
-npm run lint
-
-# 类型检查
-npm run typecheck
-```
-
-## 许可证
+## 📄 许可证
 
 MIT License
 
-## 联系方式
+## 💬 联系方式
 
 - 官方网站: https://fnzero.dev/
 - 项目仓库: https://github.com/0xfnzero/sol-trade-sdk-nodejs
 - Telegram 群组: https://t.me/fnzero_group
 - Discord: https://discord.gg/vuazbGkqQE
+
+## ⚠️ 重要注意事项
+
+1. 在主网使用前请充分测试
+2. 正确配置私钥和 API Token
+3. 注意滑点设置以避免交易失败
+4. 监控余额和交易费用
+5. 遵守相关法律法规

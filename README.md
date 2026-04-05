@@ -1,7 +1,10 @@
-# Sol Trade SDK for Node.js
+<div align="center">
+    <h1>🚀 Sol Trade SDK for Node.js</h1>
+    <h3><em>A comprehensive TypeScript SDK for seamless Solana DEX trading</em></h3>
+</div>
 
 <p align="center">
-    <strong>A high-performance Node.js SDK for low-latency Solana DEX trading</strong>
+    <strong>A high-performance TypeScript SDK for low-latency Solana DEX trading bots. Built for speed and efficiency, it enables seamless, high-throughput interaction with PumpFun, Pump AMM (PumpSwap), Bonk, Meteora DAMM v2, Raydium AMM v4, and Raydium CPMM for latency-critical trading strategies.</strong>
 </p>
 
 <p align="center">
@@ -23,11 +26,31 @@
 </p>
 
 <p align="center">
-    <a href="README_CN.md">中文</a> |
+    <a href="https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/README_CN.md">中文</a> |
+    <a href="https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/README.md">English</a> |
     <a href="https://fnzero.dev/">Website</a> |
     <a href="https://t.me/fnzero_group">Telegram</a> |
     <a href="https://discord.gg/vuazbGkqQE">Discord</a>
 </p>
+
+## 📋 Table of Contents
+
+- [✨ Features](#-features)
+- [📦 Installation](#-installation)
+- [🛠️ Usage Examples](#️-usage-examples)
+  - [📋 Example Usage](#-example-usage)
+  - [⚡ Trading Parameters](#-trading-parameters)
+  - [📊 Usage Examples Summary Table](#-usage-examples-summary-table)
+  - [⚙️ SWQoS Service Configuration](#️-swqos-service-configuration)
+  - [🔧 Middleware System](#-middleware-system)
+  - [🔍 Address Lookup Tables](#-address-lookup-tables)
+  - [🔍 Nonce Cache](#-nonce-cache)
+- [💰 Cashback Support (PumpFun / PumpSwap)](#-cashback-support-pumpfun--pumpswap)
+- [🛡️ MEV Protection Services](#️-mev-protection-services)
+- [📁 Project Structure](#-project-structure)
+- [📄 License](#-license)
+- [💬 Contact](#-contact)
+- [⚠️ Important Notes](#️-important-notes)
 
 ---
 
@@ -42,22 +65,21 @@ This SDK is available in multiple languages:
 | **Python** | [sol-trade-sdk-python](https://github.com/0xfnzero/sol-trade-sdk-python) | Async/await native support |
 | **Go** | [sol-trade-sdk-golang](https://github.com/0xfnzero/sol-trade-sdk-golang) | Concurrent-safe with goroutine support |
 
----
+## ✨ Features
 
-A comprehensive, high-performance TypeScript SDK for Solana DEX trading with support for multiple protocols and MEV providers.
+1. **PumpFun Trading**: Support for `buy` and `sell` operations
+2. **PumpSwap Trading**: Support for PumpSwap pool trading operations
+3. **Bonk Trading**: Support for Bonk trading operations
+4. **Raydium CPMM Trading**: Support for Raydium CPMM (Concentrated Pool Market Maker) trading operations
+5. **Raydium AMM V4 Trading**: Support for Raydium AMM V4 (Automated Market Maker) trading operations
+6. **Meteora DAMM V2 Trading**: Support for Meteora DAMM V2 (Dynamic AMM) trading operations
+7. **Multiple MEV Protection**: Support for Jito, Nextblock, ZeroSlot, Temporal, Bloxroute, FlashBlock, BlockRazor, Node1, Astralane and other services
+8. **Concurrent Trading**: Send transactions using multiple MEV services simultaneously; the fastest succeeds while others fail
+9. **Unified Trading Interface**: Use unified trading protocol types for trading operations
+10. **Middleware System**: Support for custom instruction middleware to modify, add, or remove instructions before transaction execution
+11. **Shared Infrastructure**: Share expensive RPC and SWQoS clients across multiple wallets for reduced resource usage
 
-## Features
-
-- **Multiple DEX Support**: PumpFun, PumpSwap, Bonk, Raydium AMM V4, Raydium CPMM, Meteora DAMM V2
-- **SWQoS Integration**: Multiple MEV providers for transaction submission
-- **High Performance**: LRU/TTL/Sharded caching, connection pooling, parallel execution
-- **Low Latency**: Optimized for sub-second trade execution
-- **Security First**: Integer overflow protection, secure key storage, input validation
-- **Zero-RPC Hot Path**: All RPC calls happen BEFORE trading execution
-- **Type Safety**: Full TypeScript support with comprehensive type definitions
-- **Modular Design**: Use only what you need
-
-## Installation
+## 📦 Installation
 
 ### Direct Clone (Recommended)
 
@@ -86,12 +108,6 @@ Add to your `package.json`:
 }
 ```
 
-Then run:
-
-```bash
-npm install
-```
-
 ### Use NPM
 
 ```bash
@@ -102,152 +118,188 @@ yarn add sol-trade-sdk
 pnpm add sol-trade-sdk
 ```
 
-## Quick Start
+## 🛠️ Usage Examples
 
-### Basic Trading
+### 📋 Example Usage
+
+#### 1. Create TradingClient Instance
+
+You can refer to [Example: Create TradingClient Instance](examples/trading_client.ts).
+
+**Method 1: Simple (single wallet)**
+```typescript
+import { TradingClient, TradeConfig, SwqosConfig, SwqosRegion } from 'sol-trade-sdk';
+
+// Wallet
+const payer = Keypair.fromSecretKey(/* your keypair */);
+
+// RPC URL
+const rpcUrl = "https://mainnet.helius-rpc.com/?api-key=xxxxxx";
+
+// Multiple SWQoS services can be configured
+const swqosConfigs: SwqosConfig[] = [
+  { type: 'Default', rpcUrl },
+  { type: 'Jito', uuid: "your_uuid", region: SwqosRegion.Frankfurt },
+  { type: 'Bloxroute', apiToken: "your_api_token", region: SwqosRegion.Frankfurt },
+  { type: 'Astralane', apiKey: "your_api_key", region: SwqosRegion.Frankfurt },
+];
+
+// Create TradeConfig instance
+const tradeConfig = new TradeConfig(rpcUrl, swqosConfigs);
+
+// Create TradingClient
+const client = new TradingClient(payer, tradeConfig);
+```
+
+**Method 2: Shared infrastructure (multiple wallets)**
+
+For multi-wallet scenarios, create the infrastructure once and share it across wallets.
+See [Example: Shared Infrastructure](examples/shared_infrastructure.ts).
 
 ```typescript
-import {
-  GasFeeStrategy,
-  TradeExecutor,
-  SwqosType,
-  TradeType,
-} from 'sol-trade-sdk';
+import { TradingInfrastructure, InfrastructureConfig } from 'sol-trade-sdk';
 
-// Create gas strategy
-const gasStrategy = new GasFeeStrategy();
-gasStrategy.setGlobalFeeStrategy(200000, 200000, 100000, 100000, 0.001, 0.001);
+// Create infrastructure once (expensive)
+const infraConfig = new InfrastructureConfig(rpcUrl, swqosConfigs);
+const infrastructure = new TradingInfrastructure(infraConfig);
 
-// Create trade executor
-const executor = new TradeExecutor({
-  rpcUrl: 'https://api.mainnet-beta.solana.com',
-  swqosConfigs: [{ type: SwqosType.Jito }],
-});
+// Create multiple clients sharing the same infrastructure (fast)
+const client1 = TradingClient.fromInfrastructure(payer1, infrastructure);
+const client2 = TradingClient.fromInfrastructure(payer2, infrastructure);
+```
 
-// Execute trade
-const result = await executor.execute(TradeType.Buy, transactionBuffer);
+#### 2. Configure Gas Fee Strategy
+
+```typescript
+import { GasFeeStrategy } from 'sol-trade-sdk';
+
+// Create GasFeeStrategy instance
+const gasFeeStrategy = new GasFeeStrategy();
+// Set global strategy
+gasFeeStrategy.setGlobalFeeStrategy(150000, 150000, 500000, 500000, 0.001, 0.001);
+```
+
+#### 3. Build Trading Parameters
+
+```typescript
+import { TradeBuyParams, DexType, TradeTokenType, DexParamEnum } from 'sol-trade-sdk';
+
+const buyParams: TradeBuyParams = {
+  dexType: DexType.PumpSwap,
+  inputTokenType: TradeTokenType.WSOL,
+  mint: mintPubkey,
+  inputTokenAmount: buySolAmount,
+  slippageBasisPoints: 500,
+  recentBlockhash: recentBlockhash,
+  // Use DexParamEnum for type-safe protocol parameters
+  extensionParams: { type: 'PumpSwap', params: pumpSwapParams },
+  addressLookupTableAccount: null,
+  waitTransactionConfirmed: true,
+  createInputTokenAta: true,
+  closeInputTokenAta: true,
+  createMintAta: true,
+  durableNonce: null,
+  fixedOutputTokenAmount: null,
+  gasFeeStrategy: gasFeeStrategy,
+  simulate: false,
+};
+```
+
+#### 4. Execute Trading
+
+```typescript
+const result = await client.buy(buyParams);
 console.log(`Transaction signature: ${result.signature}`);
 ```
 
-### PumpFun Trading
+### ⚡ Trading Parameters
+
+For comprehensive information about all trading parameters including `TradeBuyParams` and `TradeSellParams`, see the Trading Parameters documentation.
+
+#### About ShredStream
+
+When using shred to subscribe to events, due to the nature of shreds, you cannot get complete information about transaction events.
+Please ensure that the parameters your trading logic depends on are available in shreds when using them.
+
+### 📊 Usage Examples Summary Table
+
+| Description | Run Command | Source Code |
+|-------------|-------------|-------------|
+| Create and configure TradingClient instance | `npx ts-node examples/trading_client.ts` | [examples/trading_client.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/trading_client.ts) |
+| Share infrastructure across multiple wallets | `npx ts-node examples/shared_infrastructure.ts` | [examples/shared_infrastructure.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/shared_infrastructure.ts) |
+| PumpFun token sniping trading | `npx ts-node examples/pumpfun_sniper_trading.ts` | [examples/pumpfun_sniper_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpfun_sniper_trading.ts) |
+| PumpFun token copy trading | `npx ts-node examples/pumpfun_copy_trading.ts` | [examples/pumpfun_copy_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpfun_copy_trading.ts) |
+| PumpSwap trading operations | `npx ts-node examples/pumpswap_trading.ts` | [examples/pumpswap_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpswap_trading.ts) |
+| PumpSwap direct trading (via RPC) | `npx ts-node examples/pumpswap_direct_trading.ts` | [examples/pumpswap_direct_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpswap_direct_trading.ts) |
+| Raydium CPMM trading operations | `npx ts-node examples/raydium_cpmm_trading.ts` | [examples/raydium_cpmm_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/raydium_cpmm_trading.ts) |
+| Raydium AMM V4 trading operations | `npx ts-node examples/raydium_amm_v4_trading.ts` | [examples/raydium_amm_v4_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/raydium_amm_v4_trading.ts) |
+| Meteora DAMM V2 trading operations | `npx ts-node examples/meteora_damm_v2_trading.ts` | [examples/meteora_damm_v2_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/meteora_damm_v2_trading.ts) |
+| Bonk token sniping trading | `npx ts-node examples/bonk_sniper_trading.ts` | [examples/bonk_sniper_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/bonk_sniper_trading.ts) |
+| Bonk token copy trading | `npx ts-node examples/bonk_copy_trading.ts` | [examples/bonk_copy_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/bonk_copy_trading.ts) |
+| Custom instruction middleware example | `npx ts-node examples/middleware_system.ts` | [examples/middleware_system.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/middleware_system.ts) |
+| Address lookup table example | `npx ts-node examples/address_lookup.ts` | [examples/address_lookup.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/address_lookup.ts) |
+| Nonce cache (durable nonce) example | `npx ts-node examples/nonce_cache.ts` | [examples/nonce_cache.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/nonce_cache.ts) |
+| Wrap/unwrap SOL to/from WSOL example | `npx ts-node examples/wsol_wrapper.ts` | [examples/wsol_wrapper.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/wsol_wrapper.ts) |
+| Seed trading example | `npx ts-node examples/seed_trading.ts` | [examples/seed_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/seed_trading.ts) |
+| Gas fee strategy example | `npx ts-node examples/gas_fee_strategy.ts` | [examples/gas_fee_strategy.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/gas_fee_strategy.ts) |
+| Hot path trading (zero-RPC) | `npx ts-node examples/hot_path_trading.ts` | [examples/hot_path_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/hot_path_trading.ts) |
+
+### ⚙️ SWQoS Service Configuration
+
+When configuring SWQoS services, note the different parameter requirements for each service:
+
+- **Jito**: The first parameter is UUID (if no UUID, pass an empty string `""`)
+- **Other MEV services**: The first parameter is the API Token
+
+#### Custom URL Support
+
+Each SWQoS service supports an optional custom URL parameter:
 
 ```typescript
-import { PumpFunInstructionBuilder } from 'sol-trade-sdk/instruction/pumpfun';
-import { getBuyTokenAmountFromSolAmount } from 'sol-trade-sdk/calc/pumpfun';
+// Using custom URL
+const jitoConfig: SwqosConfig = {
+  type: 'Jito',
+  uuid: "your_uuid",
+  region: SwqosRegion.Frankfurt,
+  customUrl: "https://custom-jito-endpoint.com"
+};
 
-// Calculate tokens received for SOL input
-const tokens = getBuyTokenAmountFromSolAmount(
-  1_073_000_000_000_000, // virtualTokenReserves
-  30_000_000_000,         // virtualSolReserves
-  793_000_000_000_000,    // realTokenReserves
-  true,                   // hasCreator
-  1_000_000_000           // amount (1 SOL)
-);
-
-// Build buy instructions
-const builder = new PumpFunInstructionBuilder();
-const instructions = builder.buildBuyInstructions({
-  payer: payerPubkey,
-  outputMint: tokenMint,
-  inputAmount: 1_000_000_000,
-  slippageBasisPoints: 500, // 5%
-  bondingCurve: bondingCurvePubkey,
-  creatorVault: creatorVaultPubkey,
-  associatedBondingCurve: abcPubkey,
-});
+// Using default regional endpoint
+const bloxrouteConfig: SwqosConfig = {
+  type: 'Bloxroute',
+  apiToken: "your_api_token",
+  region: SwqosRegion.NewYork
+};
 ```
 
-### Hot Path Execution (Zero-RPC Trading)
+**URL Priority Logic**:
+- If a custom URL is provided, it will be used instead of the regional endpoint
+- If no custom URL is provided, the system will use the default endpoint for the specified region
+- This allows for maximum flexibility while maintaining backward compatibility
+
+When using multiple MEV services, you need to use `Durable Nonce`. You need to use the `fetchNonceInfo` function to get the latest `nonce` value, and use it as the `durableNonce` when trading.
+
+---
+
+### 🔧 Middleware System
+
+The SDK provides a powerful middleware system that allows you to modify, add, or remove instructions before transaction execution. Middleware executes in the order they are added:
 
 ```typescript
-import { HotPathExecutor, HotPathState } from 'sol-trade-sdk/hotpath';
+import { MiddlewareManager, ValidationMiddleware, TimerMiddleware } from 'sol-trade-sdk';
 
-// Initialize hot path state with pre-fetched data
-const state = new HotPathState();
-await state.prefetchBlockhash(rpcClient);
-await state.cacheAccount(tokenAccountPubkey);
-
-// Execute without any RPC calls during trading
-const executor = new HotPathExecutor(state);
-const result = await executor.executeTrade(transaction);
+const manager = new MiddlewareManager()
+  .addMiddleware(new FirstMiddleware())   // Executes first
+  .addMiddleware(new SecondMiddleware())  // Executes second
+  .addMiddleware(new ThirdMiddleware());  // Executes last
 ```
 
-### Trading with Factory
+### 🔍 Address Lookup Tables
+
+Address Lookup Tables (ALT) allow you to optimize transaction size and reduce fees by storing frequently used addresses in a compact table format.
 
 ```typescript
-import {
-  TradeExecutorFactory,
-  TradingClient,
-  DexType,
-} from 'sol-trade-sdk/trading';
-
-// Create factory with base executor
-const factory = new TradeExecutorFactory(baseExecutor);
-
-// Get DEX-specific executor
-const pumpfunExecutor = factory.getExecutor(DexType.PumpFun);
-
-// Create trading client
-const client = new TradingClient(factory);
-
-// Execute buy on PumpFun
-const result = await client.buy(DexType.PumpFun, params);
-console.log(`Result: ${result.signature}`);
-```
-
-## Usage Examples Summary
-
-| Description | File | Run Command |
-|-------------|------|-------------|
-| Create and configure TradingClient instance | [trading_client.ts](examples/trading_client.ts) | `npx ts-node examples/trading_client.ts` |
-| Share infrastructure across multiple wallets | [shared_infrastructure.ts](examples/shared_infrastructure.ts) | `npx ts-node examples/shared_infrastructure.ts` |
-| PumpFun token sniping trading | [pumpfun_sniper_trading.ts](examples/pumpfun_sniper_trading.ts) | `npx ts-node examples/pumpfun_sniper_trading.ts` |
-| PumpFun token copy trading | [pumpfun_copy_trading.ts](examples/pumpfun_copy_trading.ts) | `npx ts-node examples/pumpfun_copy_trading.ts` |
-| PumpSwap trading operations | [pumpswap_trading.ts](examples/pumpswap_trading.ts) | `npx ts-node examples/pumpswap_trading.ts` |
-| PumpSwap direct trading (via RPC) | [pumpswap_direct_trading.ts](examples/pumpswap_direct_trading.ts) | `npx ts-node examples/pumpswap_direct_trading.ts` |
-| Raydium CPMM trading operations | [raydium_cpmm_trading.ts](examples/raydium_cpmm_trading.ts) | `npx ts-node examples/raydium_cpmm_trading.ts` |
-| Raydium AMM V4 trading operations | [raydium_amm_v4_trading.ts](examples/raydium_amm_v4_trading.ts) | `npx ts-node examples/raydium_amm_v4_trading.ts` |
-| Meteora DAMM V2 trading operations | [meteora_damm_v2_trading.ts](examples/meteora_damm_v2_trading.ts) | `npx ts-node examples/meteora_damm_v2_trading.ts` |
-| Bonk token sniping trading | [bonk_sniper_trading.ts](examples/bonk_sniper_trading.ts) | `npx ts-node examples/bonk_sniper_trading.ts` |
-| Bonk token copy trading | [bonk_copy_trading.ts](examples/bonk_copy_trading.ts) | `npx ts-node examples/bonk_copy_trading.ts` |
-| Custom instruction middleware example | [middleware_system.ts](examples/middleware_system.ts) | `npx ts-node examples/middleware_system.ts` |
-| Address lookup table example | [address_lookup.ts](examples/address_lookup.ts) | `npx ts-node examples/address_lookup.ts` |
-| Nonce cache (durable nonce) example | [nonce_cache.ts](examples/nonce_cache.ts) | `npx ts-node examples/nonce_cache.ts` |
-| Wrap/unwrap SOL to/from WSOL example | [wsol_wrapper.ts](examples/wsol_wrapper.ts) | `npx ts-node examples/wsol_wrapper.ts` |
-| Seed trading example | [seed_trading.ts](examples/seed_trading.ts) | `npx ts-node examples/seed_trading.ts` |
-| Gas fee strategy example | [gas_fee_strategy.ts](examples/gas_fee_strategy.ts) | `npx ts-node examples/gas_fee_strategy.ts` |
-
-## Security Features
-
-```typescript
-import {
-  SecureKeyStorage,
-  validateRpcUrl,
-  validateAmount,
-  validatePubkey,
-} from 'sol-trade-sdk/security';
-
-// Secure key storage with AES-256-GCM encryption
-const storage = SecureKeyStorage.fromKeyPair(keypair, 'optional_password');
-storage.unlock((kp) => {
-  const signature = kp.sign(message);
-  return signature;
-});
-storage.clear(); // Secure memory clearing
-
-// Input validation
-validateRpcUrl('https://api.mainnet-beta.solana.com');
-validateAmount(1_000_000_000, 'amount', { allowZero: false });
-validatePubkey(pubkeyString, 'tokenMint');
-```
-
-## Address Lookup Tables
-
-```typescript
-import {
-  fetchAddressLookupTableAccount,
-  AddressLookupTableCache,
-} from 'sol-trade-sdk/address-lookup';
+import { fetchAddressLookupTableAccount, AddressLookupTableCache } from 'sol-trade-sdk';
 
 // Fetch ALT from chain
 const alt = await fetchAddressLookupTableAccount(rpc, altAddress);
@@ -259,116 +311,74 @@ await cache.prefetch([altAddress1, altAddress2, altAddress3]);
 const cached = cache.get(altAddress1);
 ```
 
-## Subpath Imports
+### 🔍 Durable Nonce
+
+Use Durable Nonce to implement transaction replay protection and optimize transaction processing.
 
 ```typescript
-// Import specific modules
-import { LRUCache } from 'sol-trade-sdk/cache';
-import { calculatePumpFunBuy } from 'sol-trade-sdk/calc';
-import { JitoClient } from 'sol-trade-sdk/swqos';
-import { HotPathExecutor } from 'sol-trade-sdk/hotpath';
-import { SecureKeyStorage } from 'sol-trade-sdk/security';
-import { TradeExecutorFactory } from 'sol-trade-sdk/trading';
+import { fetchNonceInfo, NonceCache } from 'sol-trade-sdk';
+
+// Fetch nonce info
+const nonceInfo = await fetchNonceInfo(rpc, nonceAccount);
 ```
 
-## Architecture
+## 💰 Cashback Support (PumpFun / PumpSwap)
 
-| Module | Description |
-|--------|-------------|
-| `address-lookup` | Address Lookup Table support with caching |
-| `cache` | LRU, TTL, and sharded caches |
-| `calc` | AMM calculations for all DEXes with overflow protection |
-| `common` | Core types, gas strategies, bonding curves |
-| `execution` | Branch optimization, prefetching |
-| `hotpath` | Zero-RPC hot path execution |
-| `instruction` | Instruction builders for all DEXes |
-| `middleware` | Instruction middleware system |
-| `pool` | Connection and worker pools |
-| `rpc` | High-performance RPC clients |
-| `security` | Secure key storage, validators |
-| `seed` | PDA derivation for all protocols |
-| `swqos` | MEV provider clients (19 providers) |
-| `trading` | High-performance trade executor with factory |
+PumpFun and PumpSwap support **cashback** for eligible tokens: part of the trading fee can be returned to the user. The SDK **must know** whether the token has cashback enabled so that buy/sell instructions include the correct accounts.
 
-## Supported Protocols
+- **When params come from RPC**: If you use `PumpFunParams.fromMintByRpc` or `PumpSwapParams.fromPoolAddressByRpc`, the SDK reads `isCashbackCoin` from chain—no extra step.
+- **When params come from event/parser**: If you build params from trade events (e.g. [sol-parser-sdk](https://github.com/0xfnzero/sol-parser-sdk)), you **must** pass the cashback flag into the SDK:
+  - **PumpFun**: Set `isCashbackCoin` when building params from parsed events.
+  - **PumpSwap**: Set `isCashbackCoin` field when constructing params manually.
 
-### PumpFun
-- Bonding curve calculations with creator fee support
-- Buy/Sell instruction building
-- PDA derivation for bonding curve and associated accounts
+## 🛡️ MEV Protection Services
 
-### PumpSwap
-- Pool calculations with LP/protocol/creator fees
-- Buy/Sell instruction building
-- Mayhem mode support
+You can apply for a key through the official website: [Community Website](https://fnzero.dev/swqos)
 
-### Bonk
-- Virtual/real reserve calculations
-- Protocol fee handling
+- **Jito**: High-performance block space
+- **ZeroSlot**: Zero-latency transactions
+- **Temporal**: Time-sensitive transactions
+- **Bloxroute**: Blockchain network acceleration
+- **FlashBlock**: High-speed transaction execution with API key authentication
+- **BlockRazor**: High-speed transaction execution with API key authentication
+- **Node1**: High-speed transaction execution with API key authentication
+- **Astralane**: Blockchain network acceleration
 
-### Raydium
-- AMM V4 calculations with constant product
-- CPMM calculations
-- Authority PDA derivation
+## 📁 Project Structure
 
-### Meteora
-- DAMM V2 swap calculations
-- Pool PDA derivation
-
-## Middleware System
-
-```typescript
-import {
-  MiddlewareManager,
-  ValidationMiddleware,
-  TimerMiddleware,
-  MetricsMiddleware,
-} from 'sol-trade-sdk/middleware';
-
-const manager = new MiddlewareManager();
-manager.addMiddleware(new ValidationMiddleware({ maxInstructions: 100 }));
-manager.addMiddleware(new TimerMiddleware());
-manager.addMiddleware(new MetricsMiddleware());
-
-// Apply middlewares to instructions
-const processed = manager.applyMiddlewaresProcessProtocolInstructions(
-  instructions,
-  'PumpFun',
-  true // isBuy
-);
+```
+src/
+├── common/           # Common functionality and tools
+├── constants/        # Constant definitions
+├── instruction/      # Instruction building
+│   └── utils/        # Instruction utilities
+├── swqos/            # MEV service clients
+├── trading/          # Unified trading engine
+│   ├── common/       # Common trading tools
+│   ├── core/         # Core trading engine
+│   ├── middleware/   # Middleware system
+│   └── factory.ts    # Trading factory
+├── utils/            # Utility functions
+│   ├── calc/         # Amount calculation utilities
+│   └── price/        # Price calculation utilities
+└── index.ts          # Main library file
 ```
 
-## Requirements
-
-- Node.js >= 18.0.0
-- TypeScript >= 5.3.0 (for development)
-
-## Scripts
-
-```bash
-# Build
-npm run build
-
-# Development
-npm run dev
-
-# Test
-npm test
-
-# Lint
-npm run lint
-
-# Type check
-npm run typecheck
-```
-
-## License
+## 📄 License
 
 MIT License
 
-## Contact
+## 💬 Contact
 
 - Official Website: https://fnzero.dev/
 - Project Repository: https://github.com/0xfnzero/sol-trade-sdk-nodejs
 - Telegram Group: https://t.me/fnzero_group
 - Discord: https://discord.gg/vuazbGkqQE
+
+## ⚠️ Important Notes
+
+1. Test thoroughly before using on mainnet
+2. Properly configure private keys and API tokens
+3. Pay attention to slippage settings to avoid transaction failures
+4. Monitor balances and transaction fees
+5. Comply with relevant laws and regulations
