@@ -25,16 +25,16 @@ export const RENT = new PublicKey('SysvarRent111111111111111111111111111111111')
 
 // DEX Programs
 export const PUMPFUN_PROGRAM = new PublicKey('6EF8rrecthR5Dkzon8Nwu78hRvfCKopJFfWcCzNfXt3D');
-export const PUMPSWAP_PROGRAM = new PublicKey('pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwq52pCSbAhL');
+export const PUMPSWAP_PROGRAM_ID = new PublicKey('pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwq52pCSbAhL');
 export const BONK_PROGRAM = new PublicKey('bonk2zCzQaobPKMKsM5Rut46yHp3zQD1ntUk8Ld8ARq');
 export const RAYDIUM_CPMM_PROGRAM = new PublicKey('CPMMoo8L3F4NbTUBBfMTm5L2AhwDtLd6P4VeXvgQA2Po');
 export const RAYDIUM_AMM_V4_PROGRAM = new PublicKey('675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8');
 export const METEORA_DAMM_V2_PROGRAM = new PublicKey('LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YvKpNLuh');
 
-// Fee recipients
-export const FEE_RECIPIENT = new PublicKey('CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4Cs9tM');
+// Fee recipients (generic SDK defaults)
+export const SDK_FEE_RECIPIENT = new PublicKey('CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4Cs9tM');
 
-export const MAYHEM_FEE_RECIPIENTS: PublicKey[] = [
+export const SDK_MAYHEM_FEE_RECIPIENTS: PublicKey[] = [
   new PublicKey('7VtWHe8WJeU9Sy5j1XF5n8qPzDtJjWxMgYVtJ89AQrVj'),
   new PublicKey('82jN8eGgPvMSW1KP9W6GdW4bQ3YbB7sGgC6BhZnLVQvR'),
 ];

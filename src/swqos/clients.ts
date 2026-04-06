@@ -26,6 +26,10 @@ export const JITO_ENDPOINTS: Record<SwqosRegion, string> = {
   [SwqosRegion.Amsterdam]: 'amsterdam.mainnet.block-engine.jito.wtf',
   [SwqosRegion.Tokyo]: 'tokyo.mainnet.block-engine.jito.wtf',
   [SwqosRegion.Singapore]: 'amsterdam.mainnet.block-engine.jito.wtf',
+  [SwqosRegion.SLC]: 'amsterdam.mainnet.block-engine.jito.wtf',
+  [SwqosRegion.London]: 'amsterdam.mainnet.block-engine.jito.wtf',
+  [SwqosRegion.LosAngeles]: 'amsterdam.mainnet.block-engine.jito.wtf',
+  [SwqosRegion.Default]: 'amsterdam.mainnet.block-engine.jito.wtf',
 };
 
 // ===== SWQOS Client Interface =====

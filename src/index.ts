@@ -9,13 +9,10 @@ import {
   Connection,
   Keypair,
   PublicKey,
-  Signer,
   Transaction,
   TransactionInstruction,
   AddressLookupTableAccount,
   Commitment,
-  RpcResponseAndContext,
-  SignatureResult,
   BlockhashWithExpiryBlockHeight,
 } from '@solana/web3.js';
 
@@ -110,7 +107,7 @@ export interface SwqosConfig {
 /**
  * Gas fee strategy configuration
  */
-export interface GasFeeStrategy {
+export interface GasFeeStrategyConfig {
   buyPriorityFee: number;
   sellPriorityFee: number;
   buyComputeUnits: number;
@@ -147,7 +144,7 @@ export interface TradeBuyParams {
   createMintAta?: boolean;
   durableNonce?: DurableNonceInfo;
   fixedOutputTokenAmount?: number;
-  gasFeeStrategy?: GasFeeStrategy;
+  gasFeeStrategy?: GasFeeStrategyConfig;
   simulate?: boolean;
   useExactSolAmount?: boolean;
   grpcRecvUs?: number;
@@ -172,7 +169,7 @@ export interface TradeSellParams {
   closeMintTokenAta?: boolean;
   durableNonce?: DurableNonceInfo;
   fixedOutputTokenAmount?: number;
-  gasFeeStrategy?: GasFeeStrategy;
+  gasFeeStrategy?: GasFeeStrategyConfig;
   simulate?: boolean;
   grpcRecvUs?: number;
 }
@@ -372,17 +369,27 @@ export interface Middleware {
 export class TradingClient {
   private payer: Keypair;
   private connection: Connection;
-  private config: TradeConfig;
+  private _config: TradeConfig;
   private middlewares: Middleware[] = [];
-  private logEnabled: boolean;
+  private _logEnabled: boolean;
 
   constructor(payer: Keypair, config: TradeConfig) {
     this.payer = payer;
-    this.config = config;
+    this._config = config;
     this.connection = new Connection(config.rpcUrl, {
       commitment: config.commitment || 'confirmed',
     });
-    this.logEnabled = config.logEnabled ?? true;
+    this._logEnabled = config.logEnabled ?? true;
+  }
+
+  /** Get the current configuration */
+  get config(): TradeConfig {
+    return this._config;
+  }
+
+  /** Check if logging is enabled */
+  get isLogEnabled(): boolean {
+    return this._logEnabled;
   }
 
   /**
@@ -586,8 +593,8 @@ export class TradingClient {
     for (const middleware of this.middlewares) {
       result = await middleware.process(result, {
         tradeType,
-        inputMint: 'inputMint' in params ? params.inputMint : params.mint,
-        outputMint: 'outputMint' in params ? params.outputMint : params.mint,
+        inputMint: params.mint,
+        outputMint: params.mint,
         inputAmount: params.inputTokenAmount,
         payer: this.payer.publicKey,
       });
@@ -690,56 +697,56 @@ interface BuildParams {
 
 // Placeholder implementations - full implementations in separate files
 class PumpFunInstructionBuilder implements InstructionBuilder {
-  async buildBuyInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildBuyInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     // Full implementation requires detailed instruction building
     return [];
   }
-  async buildSellInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildSellInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
 }
 
 class PumpSwapInstructionBuilder implements InstructionBuilder {
-  async buildBuyInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildBuyInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
-  async buildSellInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildSellInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
 }
 
 class BonkInstructionBuilder implements InstructionBuilder {
-  async buildBuyInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildBuyInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
-  async buildSellInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildSellInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
 }
 
 class RaydiumCpmmInstructionBuilder implements InstructionBuilder {
-  async buildBuyInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildBuyInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
-  async buildSellInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildSellInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
 }
 
 class RaydiumAmmV4InstructionBuilder implements InstructionBuilder {
-  async buildBuyInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildBuyInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
-  async buildSellInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildSellInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
 }
 
 class MeteoraDammV2InstructionBuilder implements InstructionBuilder {
-  async buildBuyInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildBuyInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
-  async buildSellInstructions(params: BuildParams): Promise<TransactionInstruction[]> {
+  async buildSellInstructions(_params: BuildParams): Promise<TransactionInstruction[]> {
     return [];
   }
 }
@@ -748,12 +755,12 @@ class MeteoraDammV2InstructionBuilder implements InstructionBuilder {
  * WSOL manager for wrapping/unwrapping SOL
  */
 class WsolManager {
-  static handleWsol(owner: PublicKey, amount: number): TransactionInstruction[] {
+  static handleWsol(_owner: PublicKey, _amount: number): TransactionInstruction[] {
     // Implementation for wrapping SOL
     return [];
   }
 
-  static closeWsol(owner: PublicKey): TransactionInstruction[] {
+  static closeWsol(_owner: PublicKey): TransactionInstruction[] {
     // Implementation for closing WSOL account
     return [];
   }
@@ -815,8 +822,9 @@ export * from './utils';
 // Re-export hotpath module
 export * from './hotpath';
 
-// Re-export gas fee strategy class (overrides interface)
-export { GasFeeStrategy, GasFeeStrategyType, GasFeeStrategyValue } from './common/gas-fee-strategy';
+// Re-export gas fee strategy class
+export { GasFeeStrategy, GasFeeStrategyType } from './common/gas-fee-strategy';
+export type { GasFeeStrategyValue } from './common/gas-fee-strategy';
 
 // Re-export security module
 export * from './security';

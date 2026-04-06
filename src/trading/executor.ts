@@ -34,14 +34,14 @@ export interface TradeResult {
   confirmationTimeMs?: number;
 }
 
-export interface ExecuteOptions {
+export interface ExecutorOptions {
   waitConfirmation: boolean;
   maxRetries: number;
   retryDelayMs: number;
   parallelSubmit: boolean;
 }
 
-export function defaultExecuteOptions(): ExecuteOptions {
+export function defaultExecutorOptions(): ExecutorOptions {
   return {
     waitConfirmation: true,
     maxRetries: 3,

@@ -137,6 +137,7 @@ export class LoggingMiddleware implements InstructionMiddleware {
     console.log(`[${this.name()}] Is buy: ${isBuy}`);
     for (let i = 0; i < protocolInstructions.length; i++) {
       const ix = protocolInstructions[i];
+      if (!ix) continue;
       console.log(`Instruction ${i + 1}:`);
       console.log(`  ProgramID: ${ix.programId.toBase58()}`);
       console.log(`  Accounts: ${ix.keys.length}`);
@@ -157,6 +158,7 @@ export class LoggingMiddleware implements InstructionMiddleware {
     console.log(`[${this.name()}] Is buy: ${isBuy}`);
     for (let i = 0; i < fullInstructions.length; i++) {
       const ix = fullInstructions[i];
+      if (!ix) continue;
       console.log(`Instruction ${i + 1}:`);
       console.log(`  ProgramID: ${ix.programId.toBase58()}`);
       console.log(`  Accounts: ${ix.keys.length}`);
@@ -237,6 +239,7 @@ export class ValidationMiddleware implements InstructionMiddleware {
 
     for (let i = 0; i < instructions.length; i++) {
       const ix = instructions[i];
+      if (!ix) continue;
       if (this.maxDataSize > 0 && ix.data.length > this.maxDataSize) {
         throw new Error(`[${this.name()}] Instruction ${i} data too large: ${ix.data.length} > ${this.maxDataSize}`);
       }

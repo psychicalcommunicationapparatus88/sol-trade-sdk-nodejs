@@ -28,13 +28,16 @@
 
 export {
   // State management
-  HotPathConfig,
   HotPathState,
+  TradingContext,
+  defaultHotPathConfig,
+} from './state';
+
+export type {
+  HotPathConfig,
   PrefetchedData,
   AccountState,
   PoolState,
-  TradingContext,
-  defaultHotPathConfig,
 } from './state';
 
 export type {

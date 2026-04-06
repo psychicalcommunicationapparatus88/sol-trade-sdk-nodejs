@@ -4,14 +4,25 @@
 
 import { PublicKey } from '@solana/web3.js';
 
+/// Maximum slippage in basis points (99.99% = 9999 bps)
+/// This prevents the wrap amount from doubling when slippage is 100%
+const MAX_SLIPPAGE_BASIS_POINTS = 9999;
+
 /**
  * Calculate amount with slippage for buy operations
+ * 
+ * Note: Basis points are clamped to MAX_SLIPPAGE_BASIS_POINTS (9999 = 99.99%)
+ * to prevent the amount from doubling when slippageBasisPoints = 10000.
  */
 export function calculateWithSlippageBuy(
   amount: bigint,
   slippageBasisPoints: number
 ): bigint {
-  return (amount * BigInt(10000 + slippageBasisPoints)) / BigInt(10000);
+  // Clamp basis points to max 9999 (99.99%) to prevent amount doubling at 100%
+  const bps = slippageBasisPoints > MAX_SLIPPAGE_BASIS_POINTS 
+    ? MAX_SLIPPAGE_BASIS_POINTS 
+    : slippageBasisPoints;
+  return (amount * BigInt(10000 + bps)) / BigInt(10000);
 }
 
 /**
@@ -30,8 +41,8 @@ export function calculateWithSlippageSell(
 export function getBuyTokenAmountFromSolAmount(
   virtualTokenReserves: bigint,
   virtualSolReserves: bigint,
-  realTokenReserves: bigint,
-  creatorFee: number,
+  _realTokenReserves: bigint,
+  _creatorFee: number,
   solAmount: bigint
 ): bigint {
   // Simplified calculation - full implementation requires proper bonding curve math
@@ -48,7 +59,7 @@ export function getBuyTokenAmountFromSolAmount(
 export function getSellSolAmountFromTokenAmount(
   virtualTokenReserves: bigint,
   virtualSolReserves: bigint,
-  creatorFee: number,
+  _creatorFee: number,
   tokenAmount: bigint
 ): bigint {
   // Simplified calculation

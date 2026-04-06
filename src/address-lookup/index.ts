@@ -135,13 +135,15 @@ export class AddressLookupTableCache {
 
     // Check cache first
     for (let i = 0; i < lookupTableAddresses.length; i++) {
-      const key = lookupTableAddresses[i].toBase58();
+      const addr = lookupTableAddresses[i];
+      if (!addr) continue;
+      const key = addr.toBase58();
       const cached = this.cache.get(key);
       if (cached) {
         results[i] = cached;
       } else {
         results[i] = null;
-        toFetch.push({ index: i, address: lookupTableAddresses[i] });
+        toFetch.push({ index: i, address: addr });
       }
     }
 

@@ -70,11 +70,12 @@
     "url": "https://github.com/0xfnzero/sol-trade-sdk-ts"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.91.0",
     "@solana/spl-token": "^0.4.6",
+    "@solana/web3.js": "^1.91.0",
     "bn.js": "^5.2.1",
     "borsh": "^0.7.0",
-    "bs58": "^5.0.0"
+    "bs58": "^5.0.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.5",

@@ -21,6 +21,15 @@ export enum SwqosType {
   Astralane = 'Astralane',
   NextBlock = 'NextBlock',
   Helius = 'Helius',
+  Stellium = 'Stellium',
+  Lightspeed = 'Lightspeed',
+  Soyas = 'Soyas',
+  Speedlanding = 'Speedlanding',
+  Triton = 'Triton',
+  QuickNode = 'QuickNode',
+  Syndica = 'Syndica',
+  Figment = 'Figment',
+  Alchemy = 'Alchemy',
 }
 
 export enum GasFeeStrategyType {

@@ -9,6 +9,7 @@
 
 import { Keypair, PublicKey } from '@solana/web3.js';
 import * as crypto from 'crypto';
+import * as nacl from 'tweetnacl';
 
 /**
  * Error thrown when secure key operation fails
@@ -151,7 +152,9 @@ export class SecureKeyStorage {
   private xorEncrypt(data: Buffer, key: Buffer): Buffer {
     const result = Buffer.alloc(data.length);
     for (let i = 0; i < data.length; i++) {
-      result[i] = data[i] ^ key[i % key.length];
+      const dataByte = data[i] ?? 0;
+      const keyByte = key[i % key.length] ?? 0;
+      result[i] = dataByte ^ keyByte;
     }
     return result;
   }
@@ -233,8 +236,8 @@ export class SecureKeyStorage {
    */
   async signMessage(message: Buffer | Uint8Array, password?: string): Promise<Buffer> {
     return this.withKeypair(async (keypair) => {
-      const signature = keypair.sign(Buffer.from(message));
-      return Buffer.from(signature.signature);
+      const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
+      return Buffer.from(signature);
     }, password);
   }
 
@@ -288,7 +291,7 @@ export async function signWithKeypair(
   message: Buffer | Uint8Array,
   clearAfter: boolean = false
 ): Promise<Buffer> {
-  const signature = keypair.sign(Buffer.from(message));
+  const signature = nacl.sign.detached(Buffer.from(message), keypair.secretKey);
 
   if (clearAfter) {
     // Attempt to clear sensitive data
@@ -296,5 +299,5 @@ export async function signWithKeypair(
     SecureKeyStorage['secureZero'](secret);
   }
 
-  return Buffer.from(signature.signature);
+  return Buffer.from(signature);
 }

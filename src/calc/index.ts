@@ -15,6 +15,10 @@ import BN from 'bn.js';
 const MAX_SAFE_BIGINT = BigInt('18446744073709551615'); // 2^64 - 1
 const MAX_BASIS_POINTS = BigInt(10000);
 
+/// Maximum slippage in basis points (99.99% = 9999 bps)
+/// This prevents the wrap amount from doubling when slippage is 100%
+const MAX_SLIPPAGE_BASIS_POINTS = BigInt(9999);
+
 // ===== Error Classes =====
 
 export class CalculationError extends Error {
@@ -86,13 +90,18 @@ export function ceilDiv(a: bigint, b: bigint): bigint {
 /**
  * Calculate buy amount with slippage protection
  * Includes overflow protection and validation
+ * 
+ * Note: Basis points are clamped to MAX_SLIPPAGE_BASIS_POINTS (9999 = 99.99%)
+ * to prevent the amount from doubling when basisPoints = 10000.
  */
 export function calculateWithSlippageBuy(amount: bigint, basisPoints: bigint): bigint {
   validateAmount(amount, 'amount');
-  validateBasisPoints(basisPoints);
-
-  checkOverflow(amount, basisPoints, 'multiply');
-  const slippageAmount = (amount * basisPoints) / BigInt(10000);
+  
+  // Clamp basis points to max 9999 (99.99%) to prevent amount doubling at 100%
+  const bps = basisPoints > MAX_SLIPPAGE_BASIS_POINTS ? MAX_SLIPPAGE_BASIS_POINTS : basisPoints;
+  
+  checkOverflow(amount, bps, 'multiply');
+  const slippageAmount = (amount * bps) / BigInt(10000);
 
   checkOverflow(amount, slippageAmount, 'add');
   return amount + slippageAmount;
@@ -101,17 +110,22 @@ export function calculateWithSlippageBuy(amount: bigint, basisPoints: bigint): b
 /**
  * Calculate sell amount with slippage protection
  * Includes underflow protection
+ * 
+ * 100% from Rust: src/utils/calc/common.rs calculate_with_slippage_sell
+ * 
+ * Note: Returns 1n if amount <= basisPoints / 10000n to ensure minimum output.
  */
 export function calculateWithSlippageSell(amount: bigint, basisPoints: bigint): bigint {
   validateAmount(amount, 'amount');
   validateBasisPoints(basisPoints);
 
+  // Rust: if amount <= basis_points / 10000 { 1 } else { ... }
+  if (amount <= basisPoints / BigInt(10000)) {
+    return BigInt(1);
+  }
+
   checkOverflow(amount, basisPoints, 'multiply');
   const slippageAmount = (amount * basisPoints) / BigInt(10000);
-
-  if (slippageAmount >= amount) {
-    throw new CalculationError(`Slippage ${basisPoints} basis points would result in zero or negative amount`);
-  }
 
   return amount - slippageAmount;
 }
@@ -417,8 +431,8 @@ function calculateQuoteAmountOut(
 
 export const BONK_CONSTANTS = {
   PROTOCOL_FEE_RATE: BigInt(25),   // 0.25%
-  PLATFORM_FEE_RATE: BigInt(50),   // 0.5%
-  SHARE_FEE_RATE: BigInt(25),      // 0.25%
+  PLATFORM_FEE_RATE: BigInt(100),  // 1%
+  SHARE_FEE_RATE: BigInt(0),       // 0%
   DEFAULT_VIRTUAL_BASE: BigInt('1073025605596382'),
   DEFAULT_VIRTUAL_QUOTE: BigInt('30000852951'),
 };
@@ -682,9 +696,363 @@ export function lamportsToSol(lamports: bigint | number): number {
   return Number(lamports) / 1e9;
 }
 
+// ===== Price Calculation Functions - from Rust: src/utils/price/ =====
+
+const DEFAULT_TOKEN_DECIMALS = 6;
+const SOL_DECIMALS = 9;
+
 /**
- * Convert SOL to lamports
+ * Calculate the price of token in WSOL
+ * 100% from Rust: src/utils/price/bonk.rs price_token_in_wsol
  */
-export function solToLamports(sol: number): bigint {
-  return BigInt(Math.floor(sol * 1e9));
+export function priceTokenInWsol(
+  virtualBase: bigint,
+  virtualQuote: bigint,
+  realBase: bigint,
+  realQuote: bigint
+): number {
+  return priceBaseInQuoteWithVirtual(
+    virtualBase,
+    virtualQuote,
+    realBase,
+    realQuote,
+    DEFAULT_TOKEN_DECIMALS,
+    SOL_DECIMALS
+  );
 }
+
+/**
+ * Calculate the price of base in quote with virtual reserves
+ * 100% from Rust: src/utils/price/bonk.rs price_base_in_quote
+ */
+export function priceBaseInQuoteWithVirtual(
+  virtualBase: bigint,
+  virtualQuote: bigint,
+  realBase: bigint,
+  realQuote: bigint,
+  baseDecimals: number,
+  quoteDecimals: number
+): number {
+  // Calculate decimal places difference
+  const decimalDiff = quoteDecimals - baseDecimals;
+  const decimalFactor = decimalDiff >= 0 
+    ? Math.pow(10, decimalDiff) 
+    : 1.0 / Math.pow(10, -decimalDiff);
+  
+  // Calculate reserves state before price calculation
+  const quoteReserves = virtualQuote + realQuote;
+  const baseReserves = virtualBase > realBase ? virtualBase - realBase : BigInt(0);
+  
+  if (baseReserves === BigInt(0)) {
+    return 0.0;
+  }
+  
+  if (decimalFactor === 0.0) {
+    return 0.0;
+  }
+  
+  // Use floating point calculation to avoid precision loss
+  const price = (Number(quoteReserves) / Number(baseReserves)) / decimalFactor;
+  
+  return price;
+}
+
+/**
+ * Calculate the token price in quote based on base and quote reserves
+ * 100% from Rust: src/utils/price/common.rs price_base_in_quote
+ */
+export function priceBaseInQuoteFromReserves(
+  baseReserve: bigint,
+  quoteReserve: bigint,
+  baseDecimals: number,
+  quoteDecimals: number
+): number {
+  const base = Number(baseReserve) / Math.pow(10, baseDecimals);
+  const quote = Number(quoteReserve) / Math.pow(10, quoteDecimals);
+  if (base === 0.0) {
+    return 0.0;
+  }
+  return quote / base;
+}
+
+/**
+ * Calculate the token price in base based on base and quote reserves
+ * 100% from Rust: src/utils/price/common.rs price_quote_in_base
+ */
+export function priceQuoteInBase(
+  baseReserve: bigint,
+  quoteReserve: bigint,
+  baseDecimals: number,
+  quoteDecimals: number
+): number {
+  const base = Number(baseReserve) / Math.pow(10, baseDecimals);
+  const quote = Number(quoteReserve) / Math.pow(10, quoteDecimals);
+  if (quote === 0.0) {
+    return 0.0;
+  }
+  return base / quote;
+}
+
+// ===== PumpFun Price Calculation =====
+
+// Constants from Rust: src/instruction/utils/pumpfun.rs global_constants
+const LAMPORTS_PER_SOL = 1_000_000_000;
+const SCALE = 1_000_000; // 6 decimals for tokens
+
+/**
+ * Calculate the token price in SOL based on virtual reserves
+ * 100% from Rust: src/utils/price/pumpfun.rs price_token_in_sol
+ */
+export function priceTokenInSol(
+  virtualSolReserves: bigint,
+  virtualTokenReserves: bigint
+): number {
+  const vSol = Number(virtualSolReserves) / LAMPORTS_PER_SOL;
+  const vTokens = Number(virtualTokenReserves) / SCALE;
+  if (vTokens === 0.0) {
+    return 0.0;
+  }
+  return vSol / vTokens;
+}
+
+// ===== Bonk Calculations - from Rust: src/utils/calc/bonk.rs =====
+
+/**
+ * Calculates the amount of tokens to receive when buying with SOL
+ * 100% from Rust: src/utils/calc/bonk.rs get_buy_token_amount_from_sol_amount
+ */
+export function getBonkBuyTokenAmountFromSolAmount(
+  amountIn: bigint,
+  virtualBase: bigint,
+  virtualQuote: bigint,
+  realBase: bigint,
+  realQuote: bigint,
+  slippageBasisPoints: bigint
+): bigint {
+  const amountInU128 = amountIn;
+  
+  // Fee rates from Bonk - 100% from Rust: src/instruction/utils/bonk.rs accounts
+  const PROTOCOL_FEE_RATE = BigInt(25);   // 0.25%
+  const PLATFORM_FEE_RATE = BigInt(100);  // 1%
+  const SHARE_FEE_RATE = BigInt(0);       // 0%
+  
+  // Calculate fees
+  const protocolFee = (amountInU128 * PROTOCOL_FEE_RATE) / BigInt(10000);
+  const platformFee = (amountInU128 * PLATFORM_FEE_RATE) / BigInt(10000);
+  const shareFee = (amountInU128 * SHARE_FEE_RATE) / BigInt(10000);
+  
+  // Calculate net input after fees
+  const amountInNet = amountInU128 - protocolFee - platformFee - shareFee;
+  
+  // Calculate total reserves
+  const inputReserve = virtualQuote + realQuote;
+  const outputReserve = virtualBase - realBase;
+  
+  // Apply constant product formula
+  const numerator = amountInNet * outputReserve;
+  const denominator = inputReserve + amountInNet;
+  let amountOut = numerator / denominator;
+  
+  // Apply slippage
+  amountOut = amountOut - (amountOut * slippageBasisPoints) / BigInt(10000);
+  
+  return amountOut;
+}
+
+/**
+ * Calculates the amount of SOL to receive when selling tokens
+ * 100% from Rust: src/utils/calc/bonk.rs get_sell_sol_amount_from_token_amount
+ */
+export function getBonkSellSolAmountFromTokenAmount(
+  amountIn: bigint,
+  virtualBase: bigint,
+  virtualQuote: bigint,
+  realBase: bigint,
+  realQuote: bigint,
+  slippageBasisPoints: bigint
+): bigint {
+  const amountInU128 = amountIn;
+  
+  // For sell, input_reserve is token reserves, output_reserve is SOL reserves
+  const inputReserve = virtualBase - realBase;
+  const outputReserve = virtualQuote + realQuote;
+  
+  // Use constant product formula
+  const numerator = amountInU128 * outputReserve;
+  const denominator = inputReserve + amountInU128;
+  const solAmountOut = numerator / denominator;
+  
+  // Fee rates from Bonk - 100% from Rust: src/instruction/utils/bonk.rs accounts
+  const PROTOCOL_FEE_RATE = BigInt(25);   // 0.25%
+  const PLATFORM_FEE_RATE = BigInt(100);  // 1%
+  const SHARE_FEE_RATE = BigInt(0);       // 0%
+  
+  // Calculate fees
+  const protocolFee = (solAmountOut * PROTOCOL_FEE_RATE) / BigInt(10000);
+  const platformFee = (solAmountOut * PLATFORM_FEE_RATE) / BigInt(10000);
+  const shareFee = (solAmountOut * SHARE_FEE_RATE) / BigInt(10000);
+  
+  // Net SOL after fees
+  const solAmountNet = solAmountOut - protocolFee - platformFee - shareFee;
+  
+  // Apply slippage
+  const finalAmount = solAmountNet - (solAmountNet * slippageBasisPoints) / BigInt(10000);
+  
+  return finalAmount;
+}
+
+// ===== Raydium CPMM Calculations - from Rust: src/utils/calc/raydium_cpmm.rs =====
+
+export interface RaydiumCpmmComputeSwapParams {
+  allTrade: boolean;
+  amountIn: bigint;
+  amountOut: bigint;
+  minAmountOut: bigint;
+  fee: bigint;
+}
+
+export interface RaydiumCpmmSwapResult {
+  newInputVaultAmount: bigint;
+  newOutputVaultAmount: bigint;
+  inputAmount: bigint;
+  outputAmount: bigint;
+  tradeFee: bigint;
+  protocolFee: bigint;
+  fundFee: bigint;
+  creatorFee: bigint;
+}
+
+// Raydium CPMM fee constants
+const RAYDIUM_CPMM_FEE_RATE_DENOMINATOR = BigInt(1_000_000);
+const RAYDIUM_CPMM_TRADE_FEE_RATE = BigInt(2500);
+const RAYDIUM_CPMM_CREATOR_FEE_RATE = BigInt(0);
+const RAYDIUM_CPMM_PROTOCOL_FEE_RATE = BigInt(120000);
+const RAYDIUM_CPMM_FUND_FEE_RATE = BigInt(40000);
+
+function computeRaydiumCpmmTradingFee(amount: bigint, feeRate: bigint): bigint {
+  const numerator = amount * feeRate;
+  return (numerator + RAYDIUM_CPMM_FEE_RATE_DENOMINATOR - BigInt(1)) / RAYDIUM_CPMM_FEE_RATE_DENOMINATOR;
+}
+
+function computeRaydiumCpmmProtocolFundFee(amount: bigint, feeRate: bigint): bigint {
+  const numerator = amount * feeRate;
+  return numerator / RAYDIUM_CPMM_FEE_RATE_DENOMINATOR;
+}
+
+/**
+ * Computes swap parameters for Raydium CPMM
+ * 100% from Rust: src/utils/calc/raydium_cpmm.rs compute_swap_amount
+ */
+export function computeRaydiumCpmmSwapAmount(
+  baseReserve: bigint,
+  quoteReserve: bigint,
+  isBaseIn: boolean,
+  amountIn: bigint,
+  slippageBasisPoints: bigint
+): RaydiumCpmmComputeSwapParams {
+  const [inputReserve, outputReserve] = isBaseIn 
+    ? [baseReserve, quoteReserve] 
+    : [quoteReserve, baseReserve];
+  
+  // Calculate swap
+  const tradeFee = computeRaydiumCpmmTradingFee(amountIn, RAYDIUM_CPMM_TRADE_FEE_RATE);
+  const inputAmountLessFees = amountIn - tradeFee;
+  
+  const protocolFee = computeRaydiumCpmmProtocolFundFee(tradeFee, RAYDIUM_CPMM_PROTOCOL_FEE_RATE);
+  const fundFee = computeRaydiumCpmmProtocolFundFee(tradeFee, RAYDIUM_CPMM_FUND_FEE_RATE);
+  
+  // Calculate output
+  const outputAmountSwapped = (outputReserve * inputAmountLessFees) / (inputReserve + inputAmountLessFees);
+  const outputAmount = outputAmountSwapped; // Creator fee is 0
+  
+  // Calculate min amount out with slippage
+  const minAmountOut = outputAmount - (outputAmount * slippageBasisPoints) / BigInt(10000);
+  
+  const allTrade = true;
+  
+  return {
+    allTrade,
+    amountIn,
+    amountOut: outputAmount,
+    minAmountOut,
+    fee: tradeFee,
+  };
+}
+
+// ===== Raydium AMM V4 Calculations - from Rust: src/utils/calc/raydium_amm_v4.rs =====
+
+const RAYDIUM_AMM_V4_SWAP_FEE_NUMERATOR = BigInt(25);
+const RAYDIUM_AMM_V4_SWAP_FEE_DENOMINATOR = BigInt(10000);
+const RAYDIUM_AMM_V4_TRADE_FEE_NUMERATOR = BigInt(25);
+const RAYDIUM_AMM_V4_TRADE_FEE_DENOMINATOR = BigInt(10000);
+
+/**
+ * Computes swap parameters for Raydium AMM V4
+ * 100% from Rust: src/utils/calc/raydium_amm_v4.rs compute_swap_amount
+ */
+export function computeRaydiumAmmV4SwapAmount(
+  baseReserve: bigint,
+  quoteReserve: bigint,
+  isBaseIn: boolean,
+  amountIn: bigint,
+  slippageBasisPoints: bigint
+): RaydiumCpmmComputeSwapParams {
+  const [inputReserve, outputReserve] = isBaseIn 
+    ? [baseReserve, quoteReserve] 
+    : [quoteReserve, baseReserve];
+  
+  // Calculate trade fee
+  const tradeFeeNumerator = amountIn * RAYDIUM_AMM_V4_TRADE_FEE_NUMERATOR;
+  const tradeFee = (tradeFeeNumerator + RAYDIUM_AMM_V4_TRADE_FEE_DENOMINATOR - BigInt(1)) / RAYDIUM_AMM_V4_TRADE_FEE_DENOMINATOR;
+  
+  const inputAmountLessFees = amountIn - tradeFee;
+  
+  // Calculate swap fee
+  const swapFeeNumerator = tradeFee * RAYDIUM_AMM_V4_SWAP_FEE_NUMERATOR;
+  const swapFee = swapFeeNumerator / RAYDIUM_AMM_V4_SWAP_FEE_DENOMINATOR;
+  
+  // Calculate output
+  const outputAmountSwapped = (outputReserve * inputAmountLessFees) / (inputReserve + inputAmountLessFees);
+  const outputAmount = outputAmountSwapped - swapFee;
+  
+  // Calculate min amount out with slippage
+  const minAmountOut = outputAmount - (outputAmount * slippageBasisPoints) / BigInt(10000);
+  
+  return {
+    allTrade: true,
+    amountIn,
+    amountOut: outputAmount,
+    minAmountOut,
+    fee: tradeFee,
+  };
+}
+
+// ===== Raydium CLMM Price Calculations - from Rust: src/utils/price/raydium_clmm.rs =====
+
+/**
+ * Calculate the price of token0 in token1 from sqrt price
+ * 100% from Rust: src/utils/price/raydium_clmm.rs price_token0_in_token1
+ */
+export function priceToken0InToken1(
+  sqrtPriceX64: bigint,
+  decimalsToken0: number,
+  decimalsToken1: number
+): number {
+  const sqrtPrice = Number(sqrtPriceX64) / Math.pow(2, 64); // Q64.64 to float
+  const priceRaw = sqrtPrice * sqrtPrice; // Price without decimal adjustment
+  const scale = Math.pow(10, decimalsToken0 - decimalsToken1);
+  return priceRaw * scale;
+}
+
+/**
+ * Calculate the price of token1 in token0 from sqrt price
+ * 100% from Rust: src/utils/price/raydium_clmm.rs price_token1_in_token0
+ */
+export function priceToken1InToken0(
+  sqrtPriceX64: bigint,
+  decimalsToken0: number,
+  decimalsToken1: number
+): number {
+  return 1.0 / priceToken0InToken1(sqrtPriceX64, decimalsToken0, decimalsToken1);
+}
+

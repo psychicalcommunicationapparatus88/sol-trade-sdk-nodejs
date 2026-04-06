@@ -269,15 +269,16 @@ export class HotPathState {
       ]);
 
       for (let i = 0; i < pubkeys.length; i++) {
+        const pubkey = pubkeys[i];
         const account = result[i];
-        if (account) {
-          this.updateAccount(pubkeys[i], {
-            pubkey: pubkeys[i],
+        if (account && pubkey) {
+          this.updateAccount(pubkey, {
+            pubkey: pubkey,
             data: account.data,
-            lamports: account.lamports,
+            lamports: BigInt(account.lamports),
             owner: account.owner.toBase58(),
             executable: account.executable,
-            rentEpoch: account.rentEpoch,
+            rentEpoch: account.rentEpoch ?? 0,
             slot: 0,
             fetchedAt: Date.now(),
           });

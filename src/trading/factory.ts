@@ -4,7 +4,7 @@
  * Provides factory methods for creating trade executors for different DEX protocols
  */
 
-import { PublicKey, Keypair, Transaction, TransactionInstruction } from '@solana/web3.js';
+import type { PublicKey } from '@solana/web3.js';
 
 // ===== DEX Types =====
 
@@ -45,7 +45,7 @@ export interface BatchTradeResult {
 
 // ===== Execute Options =====
 
-export interface ExecuteOptions {
+export interface TradeExecuteOptions {
   waitConfirmation?: boolean;
   maxRetries?: number;
   retryDelayMs?: number;
@@ -55,7 +55,7 @@ export interface ExecuteOptions {
   skipPreflight?: boolean;
 }
 
-export function defaultExecuteOptions(): ExecuteOptions {
+export function defaultTradeExecuteOptions(): TradeExecuteOptions {
   return {
     waitConfirmation: true,
     maxRetries: 3,
@@ -145,15 +145,15 @@ export interface MeteoraDammV2Params {
 // ===== Trade Executor Interface =====
 
 export interface ITradeExecutor {
-  executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult>;
-  executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult>;
+  executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult>;
+  executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult>;
 }
 
 // ===== Base Executor =====
 
 export abstract class BaseExecutor implements ITradeExecutor {
-  abstract executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult>;
-  abstract executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult>;
+  abstract executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult>;
+  abstract executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult>;
 
   protected buildResult(
     signature: string,
@@ -172,11 +172,11 @@ export abstract class BaseExecutor implements ITradeExecutor {
 // ===== PumpFun Executor =====
 
 export class PumpFunExecutor extends BaseExecutor {
-  async executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 
-  async executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 }
@@ -184,11 +184,11 @@ export class PumpFunExecutor extends BaseExecutor {
 // ===== PumpSwap Executor =====
 
 export class PumpSwapExecutor extends BaseExecutor {
-  async executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 
-  async executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 }
@@ -196,11 +196,11 @@ export class PumpSwapExecutor extends BaseExecutor {
 // ===== Bonk Executor =====
 
 export class BonkExecutor extends BaseExecutor {
-  async executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 
-  async executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 }
@@ -208,11 +208,11 @@ export class BonkExecutor extends BaseExecutor {
 // ===== Raydium CPMM Executor =====
 
 export class RaydiumCpmmExecutor extends BaseExecutor {
-  async executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 
-  async executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 }
@@ -220,11 +220,11 @@ export class RaydiumCpmmExecutor extends BaseExecutor {
 // ===== Raydium AMM V4 Executor =====
 
 export class RaydiumAmmV4Executor extends BaseExecutor {
-  async executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 
-  async executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 }
@@ -232,11 +232,11 @@ export class RaydiumAmmV4Executor extends BaseExecutor {
 // ===== Meteora DAMM V2 Executor =====
 
 export class MeteoraDammV2Executor extends BaseExecutor {
-  async executeBuy(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeBuy(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 
-  async executeSell(params: Record<string, unknown>, opts?: ExecuteOptions): Promise<TradeResult> {
+  async executeSell(_params: Record<string, unknown>, _opts?: TradeExecuteOptions): Promise<TradeResult> {
     return this.buildResult('', true);
   }
 }
@@ -300,7 +300,7 @@ export class TradingClient {
   async buy(
     dexType: DexType,
     params: Record<string, unknown>,
-    opts?: ExecuteOptions
+    opts?: TradeExecuteOptions
   ): Promise<TradeResult> {
     const executor = this.getExecutor(dexType);
     return executor.executeBuy(params, opts);
@@ -312,7 +312,7 @@ export class TradingClient {
   async sell(
     dexType: DexType,
     params: Record<string, unknown>,
-    opts?: ExecuteOptions
+    opts?: TradeExecuteOptions
   ): Promise<TradeResult> {
     const executor = this.getExecutor(dexType);
     return executor.executeSell(params, opts);
@@ -323,7 +323,7 @@ export class TradingClient {
    */
   async executeBatch(
     trades: Array<{ dexType: DexType; params: Record<string, unknown>; isBuy: boolean }>,
-    opts?: ExecuteOptions
+    opts?: TradeExecuteOptions
   ): Promise<BatchTradeResult> {
     const startTime = Date.now();
 
