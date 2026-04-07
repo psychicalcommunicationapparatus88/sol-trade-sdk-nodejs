@@ -134,7 +134,7 @@ export abstract class SwqosClient {
   async submitBundle(transactions: Buffer[], tip?: number): Promise<TransactionResult> {
     // Default: submit first transaction only
     if (transactions.length > 0) {
-      return this.submitTransaction(transactions[0], tip);
+      return this.submitTransaction(transactions[0]!, tip);
     }
     return {
       success: false,

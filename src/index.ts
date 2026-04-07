@@ -102,6 +102,7 @@ export interface SwqosConfig {
   region: SwqosRegion;
   apiKey: string;
   customUrl?: string;
+  mevProtection?: boolean;
 }
 
 /**
